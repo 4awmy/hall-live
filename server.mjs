@@ -3,9 +3,8 @@ import { randomUUID, timingSafeEqual } from 'node:crypto';
 import { readFileSync, writeFileSync, renameSync } from 'node:fs';
 import { loadDeck } from './deck.mjs';
 
-const owners = ['Omar','Omar','Omar','Ezzat','Ezzat','Both'];
 const names = ['Opening','Agentic AI','Software engineering','Learning','Debate','Closing'];
-const canEdit = (section, user) => owners[section] === user || owners[section] === 'Both';
+const presenter = 'Omar';
 function slide(section, title, body = '', options = []) {
   return { id: randomUUID(), section, title, body, options, revision: 0 };
 }
@@ -14,17 +13,20 @@ let state;
 try { state = JSON.parse(readFileSync(file)); }
 catch (e) {
   if (e.code !== 'ENOENT') throw e;
-  state = { slides: loadDeck(), host:'Omar', live:null, phase:'waiting', votes:{}, end:null };
+  state = { slides: loadDeck(), live:null, phase:'waiting', votes:{}, end:null };
 }
 function save(next) {
   writeFileSync(file + '.tmp', JSON.stringify(next));
   renameSync(file + '.tmp', file);
   state = next;
 }
-const passwords = { Omar: process.env.HALL_OMAR, Ezzat: process.env.HALL_EZZAT };
-if (Object.values(passwords).some(p => !p || p.length < 10) || passwords.Omar === passwords.Ezzat) {
-  throw Error('Set HALL_OMAR and HALL_EZZAT to distinct passwords of at least 10 characters.');
+const bind = process.env.HALL_BIND || '127.0.0.1';
+const password = process.env.HALL_OMAR;
+const minimumLength = ['127.0.0.1', '::1', 'localhost'].includes(bind) ? 3 : 10;
+if (!password || password.length < minimumLength) {
+  throw Error('Set HALL_OMAR to a password of at least '+minimumLength+' characters.');
 }
+const expectedPassword = Buffer.from(password);
 const sessions = new Map();
 const assets = Object.fromEntries(Object.entries({'/':'index.html','/app.js':'app.js','/style.css':'style.css','/join':'join.html','/join.js':'join.js','/qrcode.js':'qrcode.js'}).map(([url,path]) => [url,readFileSync(new URL(path,import.meta.url))]));
 const send = (res, code, value) => {
@@ -54,12 +56,12 @@ function ballotCounts(options, votes) {
   return options.map((_, i) => Object.values(votes).filter(vote => vote === i).length);
 }
 function publicState(voter) {
-  const {live,phase,votes,end,host} = state;
+  const {live,phase,votes,end} = state;
   const counts = phase === 'revealed' ? ballotCounts(live.options, votes) : null;
   const prior = counts && /^debate-\d{2}-post$/.test(live.id)
     ? state.debateResults?.[live.id.replace(/-post$/, '-pre')]
     : null;
-  return {host,live,phase,end,counts,prior,now:Date.now(),voted:Object.hasOwn(votes,voter)};
+  return {host:presenter,live,phase,end,counts,prior,now:Date.now(),voted:Object.hasOwn(votes,voter)};
 }
 createServer(async (req,res) => {
   try {
@@ -79,18 +81,17 @@ createServer(async (req,res) => {
       }
       if (path === '/studio') {
         if (!user) reject(401,'Sign in to open the studio.');
-        return send(res,200,{ user, owners,names,slides:state.slides,host:state.host,phase:state.phase,live:state.live,end:state.end,voteCount:Object.keys(state.votes).length });
+        return send(res,200,{ user, names,slides:state.slides,host:presenter,phase:state.phase,live:state.live,end:state.end,voteCount:Object.keys(state.votes).length });
       }
     }
     if (req.method !== 'POST') reject(404,'Page not found.');
     const args = await input(req);
     if (path === '/login') {
-      const expected = Object.hasOwn(passwords,args.user) ? Buffer.from(passwords[args.user]) : Buffer.alloc(0);
       const supplied = Buffer.from(typeof args.password === 'string' ? args.password : '');
-      if (!expected.length || expected.length !== supplied.length || !timingSafeEqual(expected,supplied)) reject(401,'Check your name and password.');
+      if ((args.user !== undefined && args.user !== presenter) || expectedPassword.length !== supplied.length || !timingSafeEqual(expectedPassword,supplied)) reject(401,'Check your password.');
       sessions.delete(token);
       const id = randomUUID();
-      sessions.set(id,{user:args.user,expires:Date.now()+8*3600000});
+      sessions.set(id,{user:presenter,expires:Date.now()+8*3600000});
       setCookie(res,'presenter',id,'; Max-Age=28800');
       return send(res,200,{ok:true});
     }
@@ -112,20 +113,19 @@ createServer(async (req,res) => {
       }
       const target = next.slides.find(s => s.id === args.id);
       if (path === '/add') {
-        if (!Number.isInteger(args.section) || !canEdit(args.section, user)) reject(403,'This section belongs to the other presenter.');
+        if (!Number.isInteger(args.section) || !names[args.section]) reject(400,'Choose a valid section.');
         next.slides.push(slide(args.section,'Untitled slide'));
       } else if (path === '/save') {
-        if (!target || !canEdit(target.section, user)) reject(403,'This slide belongs to the other presenter.');
+        if (!target) reject(404,'Slide not found.');
         if (target.revision !== args.revision) reject(409,'Someone saved a newer version. Copy your edits before refreshing.');
         const {title,body,options} = args;
         if (typeof title !== 'string' || !title.trim() || title.length > 100 || typeof body !== 'string' || body.length > 700 || !Array.isArray(options) || options.length === 1 || options.length > 6 || options.some(o => typeof o !== 'string' || !o.trim() || o.length > 90)) reject(400,'Use a title, up to 700 characters of slide text, and zero or two to six short choices.');
         Object.assign(target,{title,body,options,revision:target.revision+1});
       } else {
-        if (next.host !== user) reject(403,'The other presenter has the stage.');
         if (args.ballot !== (next.live?.ballot ?? null)) reject(409,'The stage changed. Refresh the studio before cueing.');
         switch (path) {
           case '/cue':
-            if (!target || !canEdit(target.section, user)) reject(403,'Cue a slide from your section.');
+            if (!target) reject(404,'Slide not found.');
             next.live = {id:target.id, section:target.section, title:target.title,
               body:target.body, options:target.options, ballot:randomUUID()};
             next.votes = {};
@@ -146,13 +146,6 @@ createServer(async (req,res) => {
             if (next.live?.section !== 4) reject(409,'Cue a debate slide first.');
             next.end = args.start ? Date.now()+30*60000 : null;
             break;
-          case '/handoff':
-            next.host = user === 'Omar' ? 'Ezzat' : 'Omar';
-            next.live = null;
-            next.phase = 'waiting';
-            next.end = null;
-            next.votes = {};
-            break;
           default: reject(404,'Action not found.');
         }
       }
@@ -163,7 +156,7 @@ createServer(async (req,res) => {
     if (!e.status) console.error(e);
     if (!res.headersSent) send(res,e.status || 500,{error:e.status ? e.message : 'The host could not save or load the event.'});
   }
-}).listen(Number(process.env.HALL_PORT || 8080),process.env.HALL_BIND || '127.0.0.1',function () {
+}).listen(Number(process.env.HALL_PORT || 8080),bind,function () {
   const {address,port} = this.address();
   console.log('Hall Live listening on '+address+':'+port);
 });

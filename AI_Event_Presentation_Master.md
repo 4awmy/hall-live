@@ -113,7 +113,7 @@ Each slide below has a unique ID, owner, proposed time, screen copy, presenter n
 
 ## A02 — What makes an agent? | 3 min
 
-**On screen:** Goal → Act → Observe → Adjust → Finish
+**On screen:** The result of one action informs the next.
 
 **Presenter notes:** An agentic system uses a model and tools to make decisions over multiple steps, observe results and continue when appropriate. Not every assistant is autonomous; a fixed workflow can be simpler and more reliable than a highly autonomous agent. Give the example of a coding assistant running a test, reading the error and revising the code. “An agent that never checks its work is a very expensive way of guessing.” [S3]
 
@@ -143,7 +143,7 @@ Which course? Which textbook? Which exam? What do you already know?
 
 ## A04 — MCP: how AI connects to things | 3 min
 
-**On screen:** “An AI with no tools can tell you where your files might be. An AI with the right access can ask the file system.”
+**On screen:** MCP lets an AI application discover and use tools it has access to.
 
 **Presenter notes:** MCP stands for Model Context Protocol. It is an open standard that helps AI applications connect to external capabilities and data. A tool might read a local file or list a calendar event; an MCP server exposes capabilities that an MCP-compatible host can use. MCP is neither a model nor a guarantee of safety or autonomy. The familiar USB-C analogy is useful but imperfect; it is a protocol, not an actual cable. [S5]
 
@@ -269,14 +269,16 @@ def vote(choice):
 
 **Visual:** Code on left, three small test cases on right. Avoid live execution; slides contain results as authored examples. The shown snippet is deliberately incomplete, not production guidance.
 
-## S06 — Is AI actually making us faster? | 3 min
+## S06 — Does AI save coding time? | 3 min
 
-**On screen:** More code ≠ more value.  
-Speed depends on task, tools, team and quality requirements.
+**On screen:**
 
-**Presenter notes:** DORA's 2025 report describes AI as amplifying existing organizational practices [S9]. An early-2025 randomized study by METR involved 16 experienced open-source developers completing 246 tasks on familiar repositories; allowing AI increased completion time by 19% in that specific setting [S11]. A February 2026 follow-up warns that selection and measurement problems make newer estimates difficult to interpret, with some indications of faster work [S12]. Neither result establishes a universal rule for today's models or novice students. The point is to measure actual outcomes, not assume them from tool use.
+| Experiment | Task | Time with AI |
+|---|---|---|
+| Peng et al. (2023) [S15] | Build one JavaScript HTTP server | **55.8% less** |
+| METR (2025) [S11] | 246 tasks in familiar open-source repositories | **19% more** |
 
-**Visual:** Prefer one quote-free takeaway card. Optional original fact card: `Early-2025 study: 19% longer task time (specific RCT; n=16 developers, 246 tasks)`. Source line directly below: METR, 2025 [S11]; follow-up 2026 [S12]. No invented bars or cross-study comparisons. If shortening, omit the number entirely and keep the qualified takeaway.
+**Presenter notes:** Ask what you would time on Hall Live: the first working screen, or the change after review and testing? Peng et al. recruited 95 freelance developers and randomized Copilot access for one task. The paper reports the time difference for completed tasks. METR randomized AI availability across real tasks from 16 experienced open-source developers in early 2025. The tools, participants and tasks differed, and the studies cannot isolate which difference accounts for the results. METR's February 2026 update describes selection and measurement problems in its follow-up [S12]. DORA examines organization-level practices [S9]. Measure time through review, testing and rework on your own task.
 
 ## S07 — The developer still owns the result | 2 min
 
@@ -284,7 +286,7 @@ Speed depends on task, tools, team and quality requirements.
 
 **Presenter notes:** Give four habits: describe the outcome and constraints, inspect generated changes, check behavior independently, and remain responsible for deploying or submitting the result. The most important skills are not just prompting; they include problem decomposition, reading code, debugging, reasoning about systems, communication and security awareness. These are recommendations, not forecasts of hiring patterns. [S9, S10]
 
-**Handoff to Ezzat:** “If we cannot explain software we built, what have we actually learned? Ezzat is going to take us from engineering to our own habits as students.”
+**Transition:** Use the same test on your coursework. Could you explain the result and solve a similar problem tomorrow?
 
 ---
 
@@ -330,17 +332,21 @@ def count_large(values):
 
 **Visual:** One highlighted line at a time; trace appears on next reveal. Code and examples are original.
 
-## L04 — What research tells us (and doesn't) | 4 min
+## L04 — Can you do it without AI? | 4 min
 
-**On screen:** Help during practice is not the same as learning for later.
+**On screen:**
 
-**Presenter notes:** Bastani and colleagues' 2025 field experiment with nearly 1,000 high-school mathematics students compared standard GPT access, a more carefully designed GPT tutor and conventional resources. AI helped during assisted practice, but unrestricted assistance could harm performance after access was removed; tutor safeguards mitigated that problem [S13]. This is evidence from a particular high-school math setting, not proof of the same effect in all universities or coding tasks. Independent retrieval practice and spaced practice are supported by broader learning research [S14]. Present the lesson without overgeneralizing: check what students can do independently.
+| Study | Setting | Finding |
+|---|---|---|
+| Bastani et al. (2025) [S13] | High-school math with unrestricted chat | Better practice scores, worse exam scores without AI |
+| Kestin et al. (2025) [S16] | Structured tutor in college physics | Higher immediate post-test scores than active learning in class |
+| Shen & Tamkin (2026) [S17] | Learning a Python library | Quiz average **50% with AI vs. 67% without** |
 
-**Visual:** Original two-column takeaway: `With help: task performance` / `Without help: retained ability`. No quantitative bars because the study's exact outcome data are not charted here. Sources [S13, S14].
+**Presenter notes:** Bastani et al. randomized classes in one high-school math setting. The guided tutor largely mitigated the downside of unrestricted chat, with no clear exam gain over the control. Kestin et al. evaluated a custom tutor across two lessons in one introductory physics course. The immediate post-test leaves long-term retention open. Shen and Tamkin randomized AI access for 52 developers learning Trio. The quiz difference was statistically significant, while the overall task-time difference was not. Ask students to try a fresh problem without AI and explain their reasoning. The broader learning review supports practice testing and spacing [S14].
 
 ## L05 — A better AI study routine | 4 min
 
-**On screen:** Try → Ask for a hint → Explain → Practice alone → Revisit later
+**On screen:** Finish by solving a fresh problem on your own.
 
 **Presenter notes:** Describe how students can use a tutor: attempt a problem first; identify what is confusing; ask for a small hint; explain the answer back; solve a new problem without AI; repeat later. Practice testing and distributing study over time support retention [S14]. The exact five-step sequence is our proposed practical synthesis, not a validated named intervention. If the AI makes factual claims, check course materials and reliable references.
 
@@ -536,6 +542,9 @@ Research consulted on 25 November 2026. Sources support specific concepts and re
 | S12 | METR, [We are Changing our Developer Productivity Experiment Design](https://metr.org/blog/2026-02-24-uplift-update/) (February 2026) | Follow-up and sampling/measurement caveats; newer results cannot support a robust universal speedup estimate. |
 | S13 | Bastani et al., [Generative AI without guardrails can harm learning: Evidence from high school mathematics](https://doi.org/10.1073/pnas.2422633122), PNAS (2025) | Field experiment, approximately 1,000 high-school math students; safeguarded tutoring versus unrestricted assistance. |
 | S14 | Dunlosky et al., [Improving Students’ Learning With Effective Learning Techniques](https://doi.org/10.1177/1529100612453266) (2013) | Research review supporting practice testing and distributed practice. Not an AI-specific experiment. |
+| S15 | Peng et al., [The Impact of AI on Developer Productivity](https://arxiv.org/abs/2302.06590) (2023 preprint) | Controlled Copilot experiment on one JavaScript task. |
+| S16 | Kestin et al., [AI tutoring outperforms in-class active learning](https://doi.org/10.1038/s41598-025-97652-6), Scientific Reports (2025) | Structured tutor and immediate post-tests across two introductory physics lessons. |
+| S17 | Shen and Tamkin, [How AI Impacts Skill Formation](https://arxiv.org/abs/2601.20245) (2026 preprint) | Randomized study of developers learning a Python library, followed by a quiz. |
 
 ### Review: what to keep, what to avoid
 

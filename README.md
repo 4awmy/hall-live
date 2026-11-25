@@ -4,11 +4,10 @@ Hall Live is a review prototype for Omar and Ezzat. See [DESIGN.md](DESIGN.md) f
 
 ## Try it on one computer
 
-Open PowerShell in this folder with Node.js available. Choose two distinct rehearsal passwords of at least ten characters.
+Open PowerShell in this folder with Node.js available. Set the presenter password before launch.
 
 ```powershell
 $env:HALL_OMAR = 'replace-with-omar-password'
-$env:HALL_EZZAT = 'replace-with-ezzat-password'
 node server.mjs
 ```
 
@@ -16,7 +15,7 @@ node server.mjs
 - Presenter studio: http://127.0.0.1:8080/?view=studio
 - Projector: http://127.0.0.1:8080/?view=projector
 
-Use different browser profiles for the two presenter accounts. Start as Omar, cue **You Are the LLM**, then cue each numbered prediction round to open voting, close it, and reveal results. Hand off to Ezzat before Learning. In Debate, cue the introduction and start the 30-minute clock. Each motion has a first and second ballot. Reveal both to see the comparison after the second vote. The clock continues across debate slides.
+Sign in to the studio and cue **You Are the LLM**, then cue each numbered prediction round to open voting, close it, and reveal results. In Debate, cue the introduction and start the 30-minute clock. Each motion has a first and second ballot. Reveal both to see the comparison after the second vote. The clock continues across debate slides.
 
 The studio loads its initial deck from [AI_Event_Presentation_Master.md](AI_Event_Presentation_Master.md). Expand **Speaker notes** in the studio to see the private notes and visual directions. To start with the master when you already have saved drafts, set `HALL_DATA` to a new file path before launching. Existing data files retain their saved deck.
 
