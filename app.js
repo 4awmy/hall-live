@@ -37,25 +37,29 @@ async function refreshPublic() {
   signature = key;
   const {live,phase,end,counts,voted,host} = data;
   const e = escapeHTML;
-  const audience = view !== 'projector';
+  const audience = mode === 'audience';
+  const stageLabel = live ? 'Live on stage' : 'Waiting for the stage';
+  const pollLabels = {ready:'Get ready to vote',open:'Voting open',closed:'Voting closed',revealed:'Poll results'};
+  const status = live?.options.length ? pollLabels[phase] : stageLabel;
   let interaction = '';
   if (phase === 'revealed') {
     const total = counts.reduce((a,b)=>a+b,0);
     interaction = '<ol class="results">'+live.options.map((o,i)=>'<li>'+e(o)+' · '+counts[i]+
-      '<meter min="0" max="'+Math.max(1,total)+'" value="'+counts[i]+'" aria-label="'+e(o)+'"></meter></li>').join('')+'</ol><p>'+total+' votes</p>';
+      '<meter min="0" max="'+Math.max(1,total)+'" value="'+counts[i]+'" aria-label="'+e(o)+'"></meter></li>').join('')+'</ol><p>'+total+' '+(total===1?'vote':'votes')+'</p>';
   } else if (phase === 'open' && audience && !voted) {
-    interaction = '<div class="ballot">'+live.options.map((o,i)=>'<button data-choice="'+i+'">'+e(o)+'</button>').join('')+'</div>';
+    interaction = '<div class="ballot" aria-label="Choose one answer">'+live.options.map((o,i)=>'<button data-choice="'+i+'"><span class="choice-letter" aria-hidden="true">'+String.fromCharCode(65+i)+'</span><span>'+e(o)+'</span></button>').join('')+'</div>';
   } else if (phase === 'open') {
-    interaction = '<p>'+ (audience ? 'Your vote is in.' : 'Voting is open. Vote on your phone.')+'</p>';
+    interaction = '<p class="poll-message" role="status">'+ (audience ? 'Your vote is in.' : 'Vote on your phone.')+'</p>';
   } else if (phase === 'closed') {
     interaction = '<p>Voting closed. Results are coming.</p>';
   }
-  main.innerHTML = '<article class="stage"><div class="stage-content"><h1>'+e(live?.title || 'The stage is set.')+'</h1><p>'+e(live?.body || (live ? '' : 'You’re connected. The next activity will appear here when '+host+' is ready.'))+'</p>'+
-    (end ? '<time class="clock" aria-label="Debate time remaining"></time>' : '')+interaction+'</div></article>';
+  main.innerHTML = '<article class="stage" data-phase="'+phase+'"><div class="stage-top"><span class="stage-status">'+status+'</span>'+
+    '<span>'+e(host)+'</span></div><div class="stage-content"><h1>'+e(live?.title || 'You’re in the hall.')+'</h1><p>'+e(live?.body || (live ? '' : 'Keep this page open. You’ll see the next activity here.'))+'</p>'+
+    (end ? '<div class="timer"><span>Debate time left</span><time class="clock" aria-label="Debate time remaining"></time></div>' : '')+interaction+'</div></article>';
   clock();
   main.querySelectorAll('[data-choice]').forEach(button => button.onclick = async () => {
     main.querySelectorAll('[data-choice]').forEach(b=>b.disabled=true);
-    await act(()=>request('/vote',{ballot:live.ballot,choice:Number(button.dataset.choice)}),'Vote sent.');
+    await act(()=>request('/vote',{ballot:live.ballot,choice:Number(button.dataset.choice)}));
     try { await refreshPublic(); }
     catch { notice.textContent = 'Connection lost. Rejoin the hall Wi-Fi to check your vote.'; }
     main.querySelectorAll('[data-choice]').forEach(b=>b.disabled=false);
@@ -82,20 +86,20 @@ async function studio() {
   const deck = names.map((name,section)=>'<section><h2>'+e(name)+'</h2><p>'+owners[section]+'</p>'+
     slides.filter(s=>s.section===section).map(s=>'<button data-select="'+s.id+'" aria-current="'+(s.id===selected)+'">'+e(s.title)+'</button>').join('')+
     (owners[section]===user?'<button data-add="'+section+'">Add slide</button>':'')+'</section>').join('');
-  const stageControl = (label,path,value='') => '<button data-stage="'+path+'" data-value="'+value+'">'+label+'</button>';
-  const phaseAction = {ready:['Open voting','open'],open:['Close voting','closed'],closed:['Reveal results','revealed']}[phase];
+  const stageControl = (label,path,value='') => '<button '+(path==='/phase' || (path==='/cue' && !phaseAction) ? 'class="primary" ' : '')+'data-stage="'+path+'" data-value="'+value+'">'+label+'</button>';
+  const phaseAction = live?.options.length ? {ready:['Open voting','open'],open:['Close voting','closed'],closed:['Reveal results','revealed']}[phase] : null;
   const controls = (edit && onStage ? stageControl('Cue saved slide','/cue') : '')+
     (onStage && live?.options.length && phaseAction ? stageControl(phaseAction[0],'/phase',phaseAction[1]) : '')+
     (onStage && live?.section===4 ? stageControl(end?'Clear debate clock':'Start 30-minute clock','/clock',end?'clear':'start') : '')+
     (onStage ? stageControl('Hand off to '+(user==='Omar'?'Ezzat':'Omar'),'/handoff') : '');
-  main.innerHTML = '<h1>Presenter studio</h1><section class="stage-panel" aria-label="Live stage"><p>Signed in as '+user+' · '+host+' has the stage</p>'+
-    '<p>Live cue · '+e(live?.title || 'Waiting')+(live?.options.length?' · '+phase+' · '+voteCount+' votes':'')+'</p>'+
-    (end?'<time class="clock" aria-label="Debate time remaining"></time>':'')+
+  main.innerHTML = '<div class="studio-header"><h1>Presenter studio</h1><p>Signed in as <strong>'+user+'</strong></p></div><section class="stage-panel" aria-label="Live stage"><div class="live-summary"><div><p class="stage-status">'+host+' has the stage</p><h2>'+e(live?.title || 'Waiting for a cue')+'</h2></div>'+
+    (live?.options.length?'<p class="poll-count">'+voteCount+' '+(voteCount===1?'vote':'votes')+' · '+({ready:'Ready',open:'Open',closed:'Closed',revealed:'Revealed'}[phase] || 'Waiting')+'</p>':'')+'</div>'+
+    (end?'<div class="timer"><span>Debate time left</span><time class="clock" aria-label="Debate time remaining"></time></div>':'')+
     '<div class="actions">'+controls+'<button id="refresh">Refresh studio</button><button id="logout">Sign out</button></div></section>'+
-    '<div class="studio"><aside class="deck" aria-label="Shared deck">'+deck+'</aside><div class="editor"><h2>'+e(names[current.section])+' · '+e(owners[current.section])+'</h2>'+
+    '<div class="studio"><aside class="deck" aria-label="Shared deck"><h2 class="deck-heading">Shared deck</h2>'+deck+'</aside><div class="editor"><h2>'+e(names[current.section])+' · '+e(owners[current.section])+'</h2>'+
     '<form><fieldset '+(edit?'':'disabled')+'><legend>'+ (edit?'Edit slide':'Read-only slide')+'</legend><label>Title<input name="title" required maxlength="100" value="'+e(current.title)+'"></label>'+
     '<label>Slide text<textarea name="body" maxlength="700">'+e(current.body)+'</textarea></label>'+
-    '<label>Poll choices, one per line<textarea name="options">'+e(current.options.join('\n'))+'</textarea></label>'+
+    '<label>Poll choices <small>Optional. Enter two to six choices, one per line.</small><textarea name="options">'+e(current.options.join('\n'))+'</textarea></label>'+
     (edit?'<button class="primary">Save slide</button>':'')+'</fieldset></form></div></div>';
   main.querySelector('form').onsubmit = event => {
     event.preventDefault();
@@ -141,5 +145,3 @@ else {
   poll();
 }
 setInterval(clock,250);
-
-
