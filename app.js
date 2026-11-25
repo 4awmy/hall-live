@@ -6,7 +6,7 @@ document.body.dataset.view = mode;
 const currentLink = document.querySelector({audience:'nav a:first-child',projector:'nav a:nth-child(2)',studio:'nav a:last-child'}[mode]);
 currentLink.setAttribute('aria-current','page');
 const escapeHTML = value => String(value ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-let snapshot, selected, signature, offset = 0, busy = false;
+let snapshot, selected, signature, offset = 0, busy = false, publicRequest = 0;
 async function request(path,data) {
   const res = await fetch(path,data === undefined ? {} : {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
   const result = await res.json();
@@ -75,8 +75,9 @@ function ballotResult(options, counts, label = '') {
     }).join('')+'</ol></section>';
 }
 async function refreshPublic() {
+  const sequence = ++publicRequest;
   const data = await request('/state');
-  if (busy) return;
+  if (busy || sequence !== publicRequest) return;
   offset = data.now - Date.now();
   snapshot = data;
   const key = JSON.stringify({...data,now:0});
@@ -111,7 +112,7 @@ async function refreshPublic() {
   clock();
   main.querySelectorAll('[data-choice]').forEach(button => button.onclick = async () => {
     main.querySelectorAll('[data-choice]').forEach(b=>b.disabled=true);
-    await act(()=>request('/vote',{ballot:live.ballot,choice:Number(button.dataset.choice)}));
+    await act(()=>request('/vote',{ballot:live.ballot,choice:Number(button.dataset.choice)}),'Vote recorded.');
     try { await refreshPublic(); }
     catch { notice.textContent = 'Connection lost. Rejoin the hall Wi-Fi to check your vote.'; }
     main.querySelectorAll('[data-choice]').forEach(b=>b.disabled=false);
@@ -146,6 +147,7 @@ async function studio() {
   const stageControl = (label,path,value='') => '<button '+(path==='/phase' || (path==='/cue' && !phaseAction) ? 'class="primary" ' : '')+'data-stage="'+path+'" data-value="'+value+'">'+label+'</button>';
   const phaseAction = live?.options.length ? {ready:['Open voting','open'],open:['Close voting','closed'],closed:['Reveal results','revealed']}[phase] : null;
   const controls = stageControl('Cue saved slide','/cue')+
+    (current.options.length ? stageControl('Cue & open poll','/cue','open') : '')+
     (live?.options.length && phaseAction ? stageControl(phaseAction[0],'/phase',phaseAction[1]) : '')+
     (live?.section===4 ? stageControl(end?'Clear debate clock':'Start 30-minute clock','/clock',end?'clear':'start') : '');
   const deckScroll = main.querySelector('.deck')?.scrollTop ?? 0;
@@ -184,7 +186,7 @@ async function studio() {
     await studio();
   },'Slide added.');});
   main.querySelectorAll('[data-stage]').forEach(b=>b.onclick=()=>{if(proceed()) act(async()=>{
-    await request(b.dataset.stage,{id:selected,ballot:live?.ballot ?? null,phase:b.dataset.value,start:b.dataset.value==='start'});
+    await request(b.dataset.stage,{id:selected,ballot:live?.ballot ?? null,phase:b.dataset.value,open:b.dataset.stage==='/cue' && b.dataset.value==='open',start:b.dataset.value==='start'});
     await studio();
   });});
   main.querySelectorAll('[data-move]:enabled').forEach(button=>button.onclick=()=>{if(proceed()) act(async()=>{
@@ -198,7 +200,32 @@ async function studio() {
   main.querySelector('#logout').onclick=()=>{if(proceed()) act(async()=>{await request('/logout',{});login();});};
   clock();
 }
-if (view === 'studio') act(studio);
+async function refreshLiveStatus() {
+  const before = snapshot;
+  if (busy || !before?.user || !main.querySelector('.stage-panel')) return;
+  const data = await request('/live-status');
+  if (busy || snapshot !== before) return;
+  if (data.ballot !== (before.live?.ballot ?? null) || data.phase !== before.phase) {
+    if (!notice.textContent) notice.textContent = 'The stage changed in another window. Refresh studio before using stage controls.';
+    return;
+  }
+  offset = data.now - Date.now();
+  before.end = data.end;
+  before.voteCount = data.voteCount;
+  const count = main.querySelector('.poll-count');
+  if (count) count.textContent = data.voteCount+' '+(data.voteCount===1?'vote':'votes')+' · '+({ready:'Ready',open:'Open',closed:'Closed',revealed:'Revealed'}[data.phase] || 'Waiting');
+  clock();
+}
+if (view === 'studio') {
+  act(studio);
+  const tick = async () => {
+    try { await refreshLiveStatus(); }
+    catch (e) {
+      if (!busy && snapshot?.user && main.querySelector('.stage-panel') && !notice.textContent) notice.textContent = 'Live status unavailable. Refresh studio to check the connection.';
+    } finally { setTimeout(tick,1200); }
+  };
+  setTimeout(tick,1200);
+}
 else {
   const poll = async () => {
     try {

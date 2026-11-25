@@ -79,6 +79,10 @@ createServer(async (req,res) => {
         if (!voter) { voter = randomUUID(); setCookie(res,'voter',voter,'; Max-Age=86400'); }
         return send(res,200,publicState(voter));
       }
+      if (path === '/live-status') {
+        if (!user) reject(401,'Sign in to open the studio.');
+        return send(res,200,{ballot:state.live?.ballot ?? null,phase:state.phase,end:state.end,voteCount:Object.keys(state.votes).length,now:Date.now()});
+      }
       if (path === '/studio') {
         if (!user) reject(401,'Sign in to open the studio.');
         return send(res,200,{ user, names,slides:state.slides,host:presenter,phase:state.phase,live:state.live,end:state.end,voteCount:Object.keys(state.votes).length });
@@ -129,7 +133,8 @@ createServer(async (req,res) => {
             next.live = {id:target.id, section:target.section, title:target.title,
               body:target.body, options:target.options, ballot:randomUUID()};
             next.votes = {};
-            next.phase = 'ready';
+            if (args.open === true && !target.options.length) reject(400,'Select a slide with poll choices.');
+            next.phase = args.open === true ? 'open' : 'ready';
             break;
           case '/phase':
             if (!next.live?.options.length || !{ready:'open',open:'closed',closed:'revealed'}[next.phase] || {ready:'open',open:'closed',closed:'revealed'}[next.phase] !== args.phase) reject(409,'That action is unavailable for this ballot.');

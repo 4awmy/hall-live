@@ -4,3 +4,5 @@ hall-data.json.tmp
 .env.*
 
 _site/
+hall-rehearsal.json
+hall-rehearsal.json.tmp
