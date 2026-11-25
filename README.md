@@ -28,3 +28,11 @@ Set HALL_BIND to 0.0.0.0 before startup. On another device connected to the same
 ## Audience QR and venue setup
 
 Open `/join` on the running server to generate a printable QR from the verified hall Wi-Fi address. Follow the [router quickstart](ROUTER-QUICKSTART.md) for the phone rehearsal and printing steps.
+
+## GitHub Pages presentation
+
+GitHub Pages publishes a static deck preview; it cannot run `server.mjs`. Voting, presenter authentication, editing, shared stage state and the debate clock remain in the local application described above. Public builds exclude speaker notes and runtime data.
+
+Build with `node scripts/build-pages.mjs`. Output is `_site/`. The preview supports chapter/slide selection, previous/next buttons, arrow keys and shareable slide links. It uses relative asset paths for the `/hall-live/` project URL.
+
+A repository administrator must choose **Settings → Pages → Build and deployment → Source → GitHub Actions** once. The **Deploy GitHub Pages** workflow then publishes pushes to `main`, or can be run manually from Actions. Expected address after successful deployment: https://4awmy.github.io/hall-live/.
