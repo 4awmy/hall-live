@@ -1,0 +1,89 @@
+:root {
+  --paper: #f5f0e7;
+  --panel: #fffdf8;
+  --ink: #211a29;
+  --muted: #62576a;
+  --line: #d9cfe0;
+  --accent: #523597;
+  --wash: #eae0ff;
+  --signal: #e2ff9d;
+  font: 16px/1.55 system-ui, sans-serif;
+  background: var(--paper);
+  color: var(--ink);
+}
+* { box-sizing: border-box }
+body { margin: 0; min-height: 100vh }
+header {
+  display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap;
+  gap: .75rem 2rem; padding: 1rem clamp(1rem, 5vw, 4rem); border-bottom: 1px solid var(--line);
+}
+.brand { display: inline-flex; align-items: center; gap: .6rem; font-size: 1.25rem; font-weight: 850; text-decoration: none }
+.brand-mark {
+  width: 1.1rem; height: 1.1rem; background: var(--accent); display: inline-block;
+  border-radius: 50% 50% 50% 12%; transform: rotate(-25deg);
+}
+a { color: inherit; text-underline-offset: .22em }
+nav, .actions { display: flex; flex-wrap: wrap; gap: .45rem }
+nav a { padding: .45rem .7rem; border-radius: .4rem; text-decoration: none }
+nav a:hover { text-decoration: underline }
+nav a[aria-current] { background: var(--wash); color: var(--accent); font-weight: 750 }
+main, #notice { max-width: 76rem; margin-inline: auto; padding-inline: clamp(1rem, 5vw, 4rem) }
+main { padding-block: clamp(1.4rem, 4vw, 3.5rem) }
+#notice { color: var(--accent); margin-block: .8rem 0 }
+#notice:empty { display: none }
+h1, h2, p { margin: 0 0 .65em; overflow-wrap: anywhere }
+h1 { font: 700 clamp(2.65rem, 7.5vw, 5.75rem)/1 Georgia, serif; letter-spacing: -.04em; text-wrap: balance }
+h2 { font-size: 1.15rem; line-height: 1.25 }
+p { white-space: pre-wrap }
+.stage {
+  background: var(--panel); border: 1px solid var(--line); border-radius: 1rem;
+  padding: clamp(1.25rem, 6vw, 5rem); min-height: 43vh; display: grid; align-items: center;
+  box-shadow: 0 12px 32px #2f15460e;
+}
+.stage p { font-size: clamp(1.05rem, 2.6vw, 1.55rem); color: var(--muted); max-width: 52ch }
+.stage p:empty { display: none }
+button, input, textarea, select {
+  font: inherit; color: inherit; background: var(--panel); border: 1px solid var(--line); border-radius: .5rem;
+  padding: .6rem .8rem; min-width: 0;
+}
+button { cursor: pointer; min-height: 44px; font-weight: 650 }
+button.primary { color: white; background: var(--accent); border-color: var(--accent) }
+button:hover:not(:disabled) { text-decoration: underline; text-underline-offset: .17em }
+button:disabled { opacity: .65; cursor: default }
+:focus-visible { outline: 3px solid #a64fba; outline-offset: 3px }
+label { display: grid; gap: .35rem; margin: .8rem 0; font-weight: 650 }
+textarea { resize: vertical; min-height: 6rem }
+fieldset { border: 0; padding: 0; margin: 0; min-width: 0 }
+legend { color: var(--muted); padding: 0 }
+.ballot { display: grid; gap: .65rem; max-width: 38rem }
+.ballot button { text-align: left; padding: .85rem 1rem; background: var(--wash); color: var(--ink); border-color: var(--line); overflow-wrap: anywhere }
+.ballot button:hover:not(:disabled) { border-color: var(--accent) }
+.results { list-style: none; padding: 0; max-width: 46rem }
+.results li { padding: .45rem 0; overflow-wrap: anywhere }
+meter { display: block; width: 100%; height: 1rem; accent-color: var(--accent) }
+.clock { display: inline-block; font-size: clamp(2rem, 7vw, 5rem); font-weight: 800; font-variant-numeric: tabular-nums; color: var(--accent) }
+.stage-panel, .editor, .login { background: var(--panel); padding: clamp(1rem, 3vw, 1.6rem); border: 1px solid var(--line); border-radius: .85rem }
+.stage-panel p { margin-bottom: .35rem }
+.actions { margin-top: .75rem }
+.studio { display: grid; grid-template-columns: minmax(12rem, 1fr) minmax(0, 2.15fr); align-items: start; gap: 1.3rem; margin-top: 1.3rem }
+.deck section { padding: .85rem .1rem; border-bottom: 1px solid var(--line) }
+.deck p { color: var(--muted); font-size: .9rem }
+.deck button { display: block; text-align: left; width: 100%; overflow-wrap: anywhere; margin: .35rem 0 }
+.deck button[data-add] { background: transparent; border-style: dashed }
+.deck [aria-current=true] { background: var(--wash); border-color: var(--accent); color: var(--accent) }
+.login { max-width: 25rem }
+[data-view=projector] {
+  --paper: #161125; --panel: #201831; --line: #514461; --ink: #fff9ed;
+  --muted: #e5d9f1; --accent: var(--signal); --wash: #312744;
+  background: var(--paper); color: var(--ink); color-scheme: dark;
+}
+[data-view=projector] main { max-width: 100rem }
+[data-view=projector] .stage { min-height: 68vh; border: 0; box-shadow: none }
+[data-view=projector] h1 { font-size: clamp(3rem, 8vw, 7rem) }
+[data-view=projector] .results { font-size: clamp(1rem, 3vw, 2rem) }
+@media(max-width: 700px) {
+  .studio { grid-template-columns: 1fr }
+  .studio .deck { order: 2 }
+  nav { font-size: .9rem }
+  nav a { padding-inline: .5rem }
+}
