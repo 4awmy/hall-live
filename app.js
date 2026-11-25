@@ -27,6 +27,33 @@ async function act(work, message) {
   catch (e) { notice.textContent = e.message; }
   finally { busy = false; }
 }
+function slideCopy(body) {
+  return body.split(/(```[\s\S]*?```)/).filter(part => part.trim()).map(part => {
+    if (part.startsWith('```')) {
+      return '<pre><code>'+escapeHTML(part.replace(/^```[^\n]*\n|\n?```$/g,''))+'</code></pre>';
+    }
+    const lines = part.trim().split('\n');
+    if (lines.length >= 3 && lines.every(line => line.startsWith('|') && line.endsWith('|'))) {
+      const row = (line, tag) => '<tr>'+line.slice(1,-1).split('|').map(cell=>
+        '<'+tag+'>'+escapeHTML(cell.trim())+'</'+tag+'>').join('')+'</tr>';
+      return '<table><thead>'+row(lines[0],'th')+'</thead><tbody>'+
+        lines.slice(2).map(line=>row(line,'td')).join('')+'</tbody></table>';
+    }
+    return '<p>'+escapeHTML(part.trim())+'</p>';
+  }).join('');
+}
+function ballotResult(options, counts, label = '') {
+  const total = counts.reduce((sum, count) => sum + count, 0);
+  return '<section class="ballot-result">'+(label ? '<h2>'+label+'</h2>' : '')+
+    '<p>'+(total ? total+' '+(total===1?'vote':'votes') : 'No votes received.')+'</p>'+
+    '<ol class="results">'+options.map((option,index)=>{
+      const count = counts[index];
+      const percent = total ? ' · '+Math.round(100*count/total)+'%' : '';
+      return '<li>'+escapeHTML(option)+' · '+count+percent+
+        '<meter min="0" max="'+Math.max(1,total)+'" value="'+count+
+        '" aria-label="'+escapeHTML(option)+'"></meter></li>';
+    }).join('')+'</ol></section>';
+}
 async function refreshPublic() {
   const data = await request('/state');
   if (busy) return;
@@ -35,7 +62,7 @@ async function refreshPublic() {
   const key = JSON.stringify({...data,now:0});
   if (signature === key) return;
   signature = key;
-  const {live,phase,end,counts,voted,host} = data;
+  const {live,phase,end,counts,prior,voted,host} = data;
   const e = escapeHTML;
   const audience = mode === 'audience';
   const stageLabel = live ? 'Live on stage' : 'Waiting for the stage';
@@ -43,18 +70,20 @@ async function refreshPublic() {
   const status = live?.options.length ? pollLabels[phase] : stageLabel;
   let interaction = '';
   if (phase === 'revealed') {
-    const total = counts.reduce((a,b)=>a+b,0);
-    interaction = '<ol class="results">'+live.options.map((o,i)=>'<li>'+e(o)+' · '+counts[i]+
-      '<meter min="0" max="'+Math.max(1,total)+'" value="'+counts[i]+'" aria-label="'+e(o)+'"></meter></li>').join('')+'</ol><p>'+total+' '+(total===1?'vote':'votes')+'</p>';
+    interaction = prior
+      ? '<div class="ballot-comparison">'+ballotResult(prior.options,prior.counts,'First vote')+
+        ballotResult(live.options,counts,'Second vote')+'</div>'
+      : ballotResult(live.options,counts);
   } else if (phase === 'open' && audience && !voted) {
     interaction = '<div class="ballot" aria-label="Choose one answer">'+live.options.map((o,i)=>'<button data-choice="'+i+'"><span class="choice-letter" aria-hidden="true">'+String.fromCharCode(65+i)+'</span><span>'+e(o)+'</span></button>').join('')+'</div>';
   } else if (phase === 'open') {
     interaction = '<p class="poll-message" role="status">'+ (audience ? 'Your vote is in.' : 'Vote on your phone.')+'</p>';
+    if (!audience) interaction += '<ol class="projector-choices">'+live.options.map(o=>'<li>'+e(o)+'</li>').join('')+'</ol>';
   } else if (phase === 'closed') {
     interaction = '<p>Voting closed. Results are coming.</p>';
   }
   main.innerHTML = '<article class="stage" data-phase="'+phase+'"><div class="stage-top"><span class="stage-status">'+status+'</span>'+
-    '<span>'+e(host)+'</span></div><div class="stage-content"><h1>'+e(live?.title || 'You’re in the hall.')+'</h1><p>'+e(live?.body || (live ? '' : 'Keep this page open. You’ll see the next activity here.'))+'</p>'+
+    '<span>'+e(host)+'</span></div><div class="stage-content"><h1>'+e(live?.title || 'You’re in the hall.')+'</h1>'+slideCopy(live?.body || (live ? '' : 'Keep this page open. You’ll see the next activity here.'))+
     (end ? '<div class="timer"><span>Debate time left</span><time class="clock" aria-label="Debate time remaining"></time></div>' : '')+interaction+'</div></article>';
   clock();
   main.querySelectorAll('[data-choice]').forEach(button => button.onclick = async () => {
@@ -81,11 +110,12 @@ async function studio() {
   const e = escapeHTML;
   const current = slides.find(s=>s.id===selected) || slides.find(s=>owners[s.section]===user);
   selected = current.id;
-  const edit = owners[current.section] === user;
+  const canEdit = section => owners[section] === user || owners[section] === 'Both';
+  const edit = canEdit(current.section);
   const onStage = host === user;
   const deck = names.map((name,section)=>'<section><h2>'+e(name)+'</h2><p>'+owners[section]+'</p>'+
     slides.filter(s=>s.section===section).map(s=>'<button data-select="'+s.id+'" aria-current="'+(s.id===selected)+'">'+e(s.title)+'</button>').join('')+
-    (owners[section]===user?'<button data-add="'+section+'">Add slide</button>':'')+'</section>').join('');
+    (canEdit(section)?'<button data-add="'+section+'">Add slide</button>':'')+'</section>').join('');
   const stageControl = (label,path,value='') => '<button '+(path==='/phase' || (path==='/cue' && !phaseAction) ? 'class="primary" ' : '')+'data-stage="'+path+'" data-value="'+value+'">'+label+'</button>';
   const phaseAction = live?.options.length ? {ready:['Open voting','open'],open:['Close voting','closed'],closed:['Reveal results','revealed']}[phase] : null;
   const controls = (edit && onStage ? stageControl('Cue saved slide','/cue') : '')+
@@ -100,7 +130,8 @@ async function studio() {
     '<form><fieldset '+(edit?'':'disabled')+'><legend>'+ (edit?'Edit slide':'Read-only slide')+'</legend><label>Title<input name="title" required maxlength="100" value="'+e(current.title)+'"></label>'+
     '<label>Slide text<textarea name="body" maxlength="700">'+e(current.body)+'</textarea></label>'+
     '<label>Poll choices <small>Optional. Enter two to six choices, one per line.</small><textarea name="options">'+e(current.options.join('\n'))+'</textarea></label>'+
-    (edit?'<button class="primary">Save slide</button>':'')+'</fieldset></form></div></div>';
+    (edit?'<button class="primary">Save slide</button>':'')+'</fieldset></form>'+
+    (current.notes?'<details class="speaker-notes"><summary>Speaker notes · '+e(current.timing)+'</summary><pre>'+e(current.notes)+'</pre></details>':'')+'</div></div>';
   main.querySelector('form').onsubmit = event => {
     event.preventDefault();
     const form = Object.fromEntries(new FormData(event.target));

@@ -1,10 +1,12 @@
 # Hall Live at the venue
 
-## Quick setup
+## Five-minute setup
 
-1. **Power the router.** Use its normal router mode with DHCP enabled and leave the internet/WAN port unplugged. Create or use an event Wi-Fi network with a password. Avoid a guest network that blocks access to the host computer. If the venue manages the router, ask its operator for a network that permits phones to reach the host.
-2. **Connect the Windows host.** Use a router LAN port by Ethernet if convenient, or join the same Wi-Fi as the audience. Plug the host into power. Run `ipconfig` and copy the IPv4 address of the connected adapter. If the router supports DHCP reservations, reserve that address for the host before printing anything.
-3. **Start Hall Live.** Open PowerShell in this folder. Replace the two example passwords with distinct rehearsal passwords and run:
+Have Node.js installed, the router powered and its Wi-Fi name and password handy. Use the timings below for a preconfigured router with DHCP enabled.
+
+1. **0:00–1:00 · Get everyone on the same network.** Use its normal router mode with DHCP enabled and leave the internet/WAN port unplugged. Create or use an event Wi-Fi network with a password. Avoid a guest network that blocks access to the host computer. If the venue manages the router, ask its operator for a network that permits phones to reach the host.
+2. **1:00–2:00 · Find the host address.** Use a router LAN port by Ethernet if convenient, or join the same Wi-Fi as the audience. Plug the host into power. Run `ipconfig` and copy the IPv4 address of the connected adapter. If the router supports DHCP reservations, reserve that address for the host before printing anything.
+3. **2:00–3:00 · Start Hall Live.** Open PowerShell in this folder. Replace the two example passwords with distinct rehearsal passwords and run:
 
    ```powershell
    $env:HALL_OMAR = 'replace-with-omar-password'
@@ -15,8 +17,8 @@
    ```
 
    Keep this terminal open. On the host, open `http://127.0.0.1:8080/?view=projector` for the projector or `http://127.0.0.1:8080/?view=studio` for presenter controls. Keep presenter sign-ins on the host or a trusted presenter network. Attendees use the host IPv4 address, for example `http://192.168.1.42:8080/`.
-4. **Test on a phone before printing.** Join the event Wi-Fi and stay connected if it says there is no internet. Temporarily turn off mobile data during the rehearsal. Type the full host address beginning with `http://`. Cue **You Are the LLM**, open voting, submit one test vote, close it, and reveal it on the projector.
-5. **Make the sign.** On the host, open `http://127.0.0.1:8080/join`. Enter the Wi-Fi name and the exact address that worked on the phone. Choose **Make QR**, then scan it on that phone. Choose **Print card** to print or save a PDF. Post the Wi-Fi password at the door separately if attendees need it. If the host address changes, regenerate the QR.
+4. **3:00–4:00 · Test on a phone.** Join the event Wi-Fi and stay connected if it says there is no internet. Temporarily turn off mobile data during the rehearsal. Type the full host address beginning with `http://`. Cue **You Are the LLM**, open voting, submit one test vote, close it, and reveal it on the projector.
+5. **4:00–5:00 · Make the QR card.** On the host, open `http://127.0.0.1:8080/join`. Enter the Wi-Fi name and the exact address that worked on the phone. Choose **Make QR**, then scan it on that phone. Choose **Print card** to print or save a PDF. Post the Wi-Fi password at the door separately if attendees need it. If the host address changes, regenerate the QR.
 
 ## If the phone can’t connect
 

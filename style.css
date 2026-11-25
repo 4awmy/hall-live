@@ -1,18 +1,20 @@
 :root {
-  --paper: #f5f0e7;
-  --panel: #fffdf8;
-  --ink: #211a29;
-  --muted: #62576a;
-  --line: #d9cfe0;
-  --accent: #523597;
-  --wash: #eae0ff;
+  --paper: #100d19;
+  --panel: #1c162b;
+  --ink: #f9f4ff;
+  --muted: #c6b7d6;
+  --line: #54476a;
+  --accent: #cab1ff;
+  --wash: #33254b;
   --signal: #e2ff9d;
   font: 16px/1.55 system-ui, sans-serif;
   background: var(--paper);
   color: var(--ink);
 }
 * { box-sizing: border-box }
-body { margin: 0; min-height: 100vh }
+body { margin: 0; min-height: 100vh; color-scheme: dark }
+::selection { color: var(--paper); background: var(--signal) }
+input, textarea { caret-color: var(--signal) }
 header {
   display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap;
   gap: .75rem 2rem; padding: 1rem clamp(1rem, 5vw, 4rem); border-bottom: 1px solid var(--line);
@@ -32,13 +34,16 @@ main { padding-block: clamp(1.4rem, 4vw, 3.5rem) }
 #notice { color: var(--accent); margin-block: .8rem 0 }
 #notice:empty { display: none }
 h1, h2, p { margin: 0 0 .65em; overflow-wrap: anywhere }
-h1 { font: 700 clamp(2.65rem, 7.5vw, 5.75rem)/1 Georgia, serif; letter-spacing: -.04em; text-wrap: balance }
+h1 { font: 700 clamp(2.65rem, 7.5vw, 5.75rem)/1 system-ui, sans-serif; letter-spacing: -.04em; text-wrap: balance }
 h2 { font-size: 1.15rem; line-height: 1.25 }
 p { white-space: pre-wrap }
 .stage {
-  background: var(--panel); border: 1px solid var(--line); border-radius: 1rem;
+  background:
+    radial-gradient(ellipse at 100% 0%, #503576 0%, transparent 65%),
+    var(--panel);
+  border: 1px solid var(--line); border-radius: 1rem;
   padding: clamp(1.25rem, 6vw, 5rem); min-height: 43vh; display: grid; align-items: center;
-  box-shadow: 0 12px 32px #2f15460e;
+  box-shadow: 0 20px 55px #09061070;
 }
 .stage p { font-size: clamp(1.05rem, 2.6vw, 1.55rem); color: var(--muted); max-width: 52ch }
 .stage p:empty { display: none }
@@ -47,17 +52,17 @@ button, input, textarea, select {
   padding: .6rem .8rem; min-width: 0;
 }
 button { cursor: pointer; min-height: 44px; font-weight: 650 }
-button.primary { color: white; background: var(--accent); border-color: var(--accent) }
+button.primary { color: var(--paper); background: var(--accent); border-color: var(--accent) }
 button:hover:not(:disabled) { text-decoration: underline; text-underline-offset: .17em }
 button:disabled { opacity: .65; cursor: default }
-:focus-visible { outline: 3px solid #a64fba; outline-offset: 3px }
+:focus-visible { outline: 3px solid var(--signal); outline-offset: 3px }
 label { display: grid; gap: .35rem; margin: .8rem 0; font-weight: 650 }
 textarea { resize: vertical; min-height: 6rem }
 fieldset { border: 0; padding: 0; margin: 0; min-width: 0 }
 legend { color: var(--muted); padding: 0 }
 .ballot { display: grid; gap: .65rem; max-width: 38rem }
 .ballot button { text-align: left; padding: .85rem 1rem; background: var(--wash); color: var(--ink); border-color: var(--line); overflow-wrap: anywhere }
-.ballot button:hover:not(:disabled) { border-color: var(--accent) }
+.ballot button:hover:not(:disabled) { border-color: var(--signal); background: #44335d }
 .results { list-style: none; padding: 0; max-width: 46rem }
 .results li { padding: .45rem 0; overflow-wrap: anywhere }
 meter { display: block; width: 100%; height: 1rem; accent-color: var(--accent) }
@@ -78,7 +83,7 @@ meter { display: block; width: 100%; height: 1rem; accent-color: var(--accent) }
   background: var(--paper); color: var(--ink); color-scheme: dark;
 }
 [data-view=projector] main { max-width: 100rem }
-[data-view=projector] .stage { min-height: 68vh; border: 0; box-shadow: none }
+[data-view=projector] .stage { min-height: 76vh; box-shadow: none }
 [data-view=projector] h1 { font-size: clamp(3rem, 8vw, 7rem) }
 [data-view=projector] .results { font-size: clamp(1rem, 3vw, 2rem) }
 @media(max-width: 700px) {
@@ -93,14 +98,31 @@ meter { display: block; width: 100%; height: 1rem; accent-color: var(--accent) }
 .stage { display: flex; flex-direction: column; align-items: stretch; gap: clamp(2rem, 7vw, 5rem) }
 .stage-top { display: flex; justify-content: space-between; align-items: center; gap: .8rem; color: var(--muted); font-size: .9rem }
 .stage-status { display: inline-flex; align-items: center; gap: .5rem; font-weight: 750; color: var(--accent) }
+.stage[data-phase=open] { border-color: var(--signal) }
 .stage-status::before { content: ""; width: .55rem; height: .55rem; border-radius: 50%; background: currentColor; flex: none }
-.stage[data-phase=open] .stage-status { color: #286341 }
+.stage[data-phase=open] .stage-status { color: var(--signal) }
 .stage-content { flex: 1; display: flex; flex-direction: column; align-items: flex-start; justify-content: center }
 .stage .poll-message { background: var(--wash); color: var(--ink); border-radius: .55rem; padding: .6rem .8rem }
 .ballot { width: 100%; margin-top: .55rem }
 .ballot button { display: flex; align-items: center; gap: .8rem; min-height: 3.65rem }
 .choice-letter { background: var(--panel); color: var(--accent); border-radius: .35rem; padding: .15rem .52rem; flex: none }
 .results { width: 100% }
+.ballot-result, .ballot-comparison { width: 100%; min-width: 0 }
+.ballot-comparison { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.5rem }
+.projector-choices { font-size: clamp(1.15rem, 2.5vw, 2rem); column-gap: 2.5rem; columns: 2 }
+.projector-choices li { break-inside: avoid; margin-bottom: .4rem }
+.stage pre, .speaker-notes pre { white-space: pre-wrap; overflow-wrap: anywhere }
+.stage pre, .stage table { width: 100%; margin: .5rem 0 1rem }
+.stage pre { padding: 1rem; background: var(--paper); border: 1px solid var(--line); border-radius: .5rem }
+.stage table { border-collapse: collapse; table-layout: fixed }
+.stage th, .stage td { padding: .65rem; border: 1px solid var(--line); text-align: left; overflow-wrap: anywhere }
+.speaker-notes { margin-top: 1.4rem; border-top: 1px solid var(--line); padding-top: .85rem }
+.speaker-notes summary { cursor: pointer; font-weight: 650 }
+.speaker-notes pre { font: inherit; color: var(--muted) }
+@media (max-width: 600px) {
+  .ballot-comparison { grid-template-columns: 1fr }
+  .projector-choices { columns: 1 }
+}
 .timer { display: grid; margin-block: 0 1rem; font-variant-numeric: tabular-nums }
 .timer span { color: var(--muted) }
 .timer .clock { line-height: 1.1 }
@@ -145,7 +167,7 @@ meter { display: block; width: 100%; height: 1rem; accent-color: var(--accent) }
 }
 @media print {
   @page { margin: 12mm }
-  :root, body { background: white; color: black }
+  :root, body { background: white; color: black; color-scheme: light }
   header, .join-settings { display: none }
   .join-layout { display: block; max-width: none; padding: 0 }
   .join-card { border: 0; padding: 0; break-inside: avoid }

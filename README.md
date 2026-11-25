@@ -16,7 +16,9 @@ node server.mjs
 - Presenter studio: http://127.0.0.1:8080/?view=studio
 - Projector: http://127.0.0.1:8080/?view=projector
 
-Use different browser profiles for the two presenter accounts. Start as Omar and select the seeded You Are the LLM slide. Cue it, open voting and vote from the audience view. Close voting and reveal the results. Hand off to Ezzat, then refresh Ezzat's studio. Cue the debate motion, start the 30-minute clock, and cue the final vote when ready. The clock continues across debate slides.
+Use different browser profiles for the two presenter accounts. Start as Omar, cue **You Are the LLM**, then cue each numbered prediction round to open voting, close it, and reveal results. Hand off to Ezzat before Learning. In Debate, cue the introduction and start the 30-minute clock. Each motion has a first and second ballot. Reveal both to see the comparison after the second vote. The clock continues across debate slides.
+
+The studio loads its initial deck from [AI_Event_Presentation_Master.md](AI_Event_Presentation_Master.md). Expand **Speaker notes** in the studio to see the private notes and visual directions. To start with the master when you already have saved drafts, set `HALL_DATA` to a new file path before launching. Existing data files retain their saved deck.
 
 Drafts and live state are stored in hall-data.json in the launch folder. Keep a copy while the server is stopped. Set HALL_DATA to another file path to rehearse with separate data. Stop the server with Ctrl+C. Presenter sessions reset on restart.
 

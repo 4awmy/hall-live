@@ -1,17 +1,11 @@
 import { createServer } from 'node:http';
 import { randomUUID, timingSafeEqual } from 'node:crypto';
 import { readFileSync, writeFileSync, renameSync } from 'node:fs';
+import { loadDeck } from './deck.mjs';
 
-const owners = ['Omar','Omar','Omar','Ezzat','Ezzat'];
-const names = ['Opening','Agentic AI','Software engineering','Learning','Debate'];
-const seed = [
-  ['Opening','', []],
-  ['You Are the LLM','Choose the next word: The kettle started to …', ['whistle','boil','shake']],
-  ['Would you ship it?','The AI wrote a convincing change. What do you check first?', ['The tests','The assumptions','The actual behavior']],
-  ['Before asking AI','When you get stuck, what do you usually do first?', ['Try one more thing','Ask for a hint','Ask for the answer']],
-  ['The motion','AI should be allowed in every university assignment.', ['Agree','Unsure','Disagree']],
-  ['The final vote','AI should be allowed in every university assignment.', ['Agree','Unsure','Disagree']]
-];
+const owners = ['Omar','Omar','Omar','Ezzat','Ezzat','Both'];
+const names = ['Opening','Agentic AI','Software engineering','Learning','Debate','Closing'];
+const canEdit = (section, user) => owners[section] === user || owners[section] === 'Both';
 function slide(section, title, body = '', options = []) {
   return { id: randomUUID(), section, title, body, options, revision: 0 };
 }
@@ -20,7 +14,7 @@ let state;
 try { state = JSON.parse(readFileSync(file)); }
 catch (e) {
   if (e.code !== 'ENOENT') throw e;
-  state = { slides: seed.map(([title,body,options], i) => slide(Math.min(i,4), title,body,options)), host:'Omar', live:null, phase:'waiting', votes:{}, end:null };
+  state = { slides: loadDeck(), host:'Omar', live:null, phase:'waiting', votes:{}, end:null };
 }
 function save(next) {
   writeFileSync(file + '.tmp', JSON.stringify(next));
@@ -56,10 +50,16 @@ async function input(req) {
   } catch {}
   reject(400,'Invalid request.');
 }
+function ballotCounts(options, votes) {
+  return options.map((_, i) => Object.values(votes).filter(vote => vote === i).length);
+}
 function publicState(voter) {
   const {live,phase,votes,end,host} = state;
-  const counts = phase === 'revealed' ? live.options.map((_,i) => Object.values(votes).filter(v => v === i).length) : null;
-  return {host,live,phase,end,counts,now:Date.now(),voted:Object.hasOwn(votes,voter)};
+  const counts = phase === 'revealed' ? ballotCounts(live.options, votes) : null;
+  const prior = counts && /^debate-\d{2}-post$/.test(live.id)
+    ? state.debateResults?.[live.id.replace(/-post$/, '-pre')]
+    : null;
+  return {host,live,phase,end,counts,prior,now:Date.now(),voted:Object.hasOwn(votes,voter)};
 }
 createServer(async (req,res) => {
   try {
@@ -112,10 +112,10 @@ createServer(async (req,res) => {
       }
       const target = next.slides.find(s => s.id === args.id);
       if (path === '/add') {
-        if (owners[args.section] !== user || !Number.isInteger(args.section)) reject(403,'This section belongs to the other presenter.');
+        if (!Number.isInteger(args.section) || !canEdit(args.section, user)) reject(403,'This section belongs to the other presenter.');
         next.slides.push(slide(args.section,'Untitled slide'));
       } else if (path === '/save') {
-        if (!target || owners[target.section] !== user) reject(403,'This slide belongs to the other presenter.');
+        if (!target || !canEdit(target.section, user)) reject(403,'This slide belongs to the other presenter.');
         if (target.revision !== args.revision) reject(409,'Someone saved a newer version. Copy your edits before refreshing.');
         const {title,body,options} = args;
         if (typeof title !== 'string' || !title.trim() || title.length > 100 || typeof body !== 'string' || body.length > 700 || !Array.isArray(options) || options.length === 1 || options.length > 6 || options.some(o => typeof o !== 'string' || !o.trim() || o.length > 90)) reject(400,'Use a title, up to 700 characters of slide text, and zero or two to six short choices.');
@@ -125,14 +125,22 @@ createServer(async (req,res) => {
         if (args.ballot !== (next.live?.ballot ?? null)) reject(409,'The stage changed. Refresh the studio before cueing.');
         switch (path) {
           case '/cue':
-            if (!target || owners[target.section] !== user) reject(403,'Cue a slide from your section.');
-            next.live = {...target,ballot:randomUUID()};
+            if (!target || !canEdit(target.section, user)) reject(403,'Cue a slide from your section.');
+            next.live = {id:target.id, section:target.section, title:target.title,
+              body:target.body, options:target.options, ballot:randomUUID()};
             next.votes = {};
             next.phase = 'ready';
             break;
           case '/phase':
             if (!next.live?.options.length || !{ready:'open',open:'closed',closed:'revealed'}[next.phase] || {ready:'open',open:'closed',closed:'revealed'}[next.phase] !== args.phase) reject(409,'That action is unavailable for this ballot.');
             next.phase = args.phase;
+            if (next.phase === 'revealed' && /^debate-\d{2}-(pre|post)$/.test(next.live.id)) {
+              next.debateResults ??= {};
+              next.debateResults[next.live.id] = {
+                options: next.live.options,
+                counts: ballotCounts(next.live.options, next.votes)
+              };
+            }
             break;
           case '/clock':
             if (next.live?.section !== 4) reject(409,'Cue a debate slide first.');
