@@ -1,14 +1,14 @@
 import { createServer } from 'node:http';
 import { randomUUID, timingSafeEqual } from 'node:crypto';
 import { readFileSync, writeFileSync, renameSync } from 'node:fs';
-import { loadDeck } from './deck.mjs';
+import { loadPresentation as loadDeck } from './presentation.mjs';
 
 const names = ['Opening','Agentic AI','Software engineering','Learning','Debate','Closing'];
 const presenter = 'Omar';
 function slide(section, title, body = '', options = []) {
   return { id: randomUUID(), section, title, body, options, revision: 0 };
 }
-const file = process.env.HALL_DATA || 'hall-data.json';
+const file = process.env.HALL_DATA || 'hall-presentation-data.json';
 let state;
 try { state = JSON.parse(readFileSync(file)); }
 catch (e) {
@@ -28,7 +28,7 @@ if (!password || password.length < minimumLength) {
 }
 const expectedPassword = Buffer.from(password);
 const sessions = new Map();
-const assets = Object.fromEntries(Object.entries({'/':'index.html','/app.js':'app.js','/style.css':'style.css','/join':'join.html','/join.js':'join.js','/qrcode.js':'qrcode.js'}).map(([url,path]) => [url,readFileSync(new URL(path,import.meta.url))]));
+const assets = Object.fromEntries(Object.entries({'/':'index.html','/app.js':'app.js','/logos.js':'logos.js','/style.css':'style.css','/join':'join.html','/join.js':'join.js','/qrcode.js':'qrcode.js'}).map(([url,path]) => [url,readFileSync(new URL(path,import.meta.url))]));
 const send = (res, code, value) => {
   res.writeHead(code, {'Content-Type':'application/json','Cache-Control':'no-store'});
   res.end(JSON.stringify(value));
@@ -74,6 +74,9 @@ createServer(async (req,res) => {
       if (assets[path]) {
         res.writeHead(200, {'Content-Type':path.endsWith('.js')?'text/javascript':path.endsWith('.css')?'text/css':'text/html; charset=utf-8','Cache-Control':'no-cache'});
         return res.end(assets[path]);
+      }
+      if (path === '/deck.json') {
+        return send(res,200,state.slides.map(({notes,timing,revision,...slide})=>slide));
       }
       if (path === '/state') {
         if (!voter) { voter = randomUUID(); setCookie(res,'voter',voter,'; Max-Age=86400'); }

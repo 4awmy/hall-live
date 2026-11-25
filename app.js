@@ -1,217 +1,70 @@
-const main = document.querySelector('main');
-const notice = document.querySelector('#notice');
-const view = new URLSearchParams(location.search).get('view');
-const mode = view === 'projector' || view === 'studio' ? view : 'audience';
-document.body.dataset.view = mode;
-const currentLink = document.querySelector({audience:'nav a:first-child',projector:'nav a:nth-child(2)',studio:'nav a:last-child'}[mode]);
-currentLink.setAttribute('aria-current','page');
-const escapeHTML = value => String(value ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-let snapshot, selected, signature, offset = 0, busy = false;
-async function request(path,data) {
-  const res = await fetch(path,data === undefined ? {} : {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
-  const result = await res.json();
-  if (!res.ok) throw Object.assign(Error(result.error),{status:res.status});
-  return result;
+const $=s=>document.querySelector(s);
+const escape=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const sections=['Opening','Agentic AI','Software engineering','Learning with AI','Open debate','Together, next'];
+const subtitles=['Start with a prediction','From answers to actions','From code to responsibility','Build skills that stay','Make room for disagreement','Take it into tomorrow'];
+const local=!window.HALL_STATIC&&location.protocol!=='file:';
+let deck=[],index=0,host=false,following=new URLSearchParams(location.search).has('follow'),state=null,busy=false,offset=0,lastPublic='',localPicks={};
+const main=$('main');
+try{localPicks=JSON.parse(sessionStorage.getItem('hall-picks')||'{}');}catch{}
+function note(message){$('#notice').textContent=message;}
+async function request(path,data){const r=await fetch('./'+path,{method:data===undefined?'GET':'POST',headers:data===undefined?{}:{'Content-Type':'application/json'},body:data===undefined?undefined:JSON.stringify(data)});const body=await r.json();if(!r.ok)throw Error(body.error||'The local host could not complete that action.');return body;}
+function flow(items,caption='',className=''){return `<figure class="diagram ${className}"><div class="flow">${items.map((item,i)=>`<div class="flow-step"><span class="node-index">${String(i+1).padStart(2,'0')}</span><strong>${escape(item)}</strong></div>`).join('')}</div><figcaption>${escape(caption)}</figcaption></figure>`;}
+function visual(type){
+ if(type==='hello')return '<div class="hello-art"><span class="hello-caption">YOUR HOSTS</span><span>Omar</span><span class="hello-cross">×</span><span>Ezzat</span><p>Two perspectives. One conversation.</p></div>';
+ if(type==='farewell')return '<div class="farewell-art" aria-hidden="true"><span>One last</span><span>goodbye.</span><span class="farewell-dots">…</span></div>';
+ if(type==='memorial')return '<div class="memorial-grid">'+[['wikipedia','Wikipedia'],['mawdoo3','Mawdoo3 / موضوع'],['stackoverflow','Stack Overflow']].map(([key,name])=>'<figure class="memorial-card"><div class="memorial-logo"><img src="'+escape(window.HALL_LOGOS[key])+'" alt="'+escape(name)+' logo"><span class="mourning-ribbon" aria-hidden="true"></span></div><figcaption>'+escape(name)+'</figcaption></figure>').join('')+'</div>';
+
+ if(type==='cover')return '<div class="cover-art" aria-hidden="true"><span>AI</span><span class="outline">× US</span><div class="art-label">THE TOOLS CHANGED.<br>THE QUESTIONS GOT BIGGER.</div></div>';
+ if(type==='prediction')return '<figure class="diagram"><div class="prompt-line">The student finally opened <span>…</span></div><div class="token-row"><span>the assignment</span><span>the IDE</span><span class="highlight">ChatGPT</span></div><figcaption>Illustrative continuations, not measured probabilities. Your room’s votes are an analogy, not a model’s output.</figcaption></figure>';
+ if(type==='taxonomy')return '<figure class="diagram"><div class="nest">Artificial intelligence<div>Machine learning<div>Deep learning<div>Many modern LLMs</div></div></div></div><figcaption>A simplified map. Agentic behavior describes how a system operates; it is not another nested model family.</figcaption></figure>';
+ if(type==='agent')return flow(['Goal + context','Choose an action','Use an allowed tool','Inspect the result'],'Repeat, answer, or stop. Ask for human approval when needed.','loop');
+ if(type==='context')return flow(['Goal','Relevant evidence','Constraints','Definition of done'],'Useful context helps the model work on your actual problem.');
+ if(type==='mcp')return flow(['AI application','MCP client','MCP server','Allowed tools / resources'],'The application connects through a client. The server exposes capabilities; authorization controls access.');
+ if(type==='skill')return '<figure class="diagram"><div class="skill-card"><span class="file-label">SKILL.md + RESOURCES</span><h3>A repeatable way to work.</h3><ul><li>When this skill applies</li><li>Steps and examples</li><li>How to verify the result</li></ul></div><figcaption>Instructions describe the process. They do not grant new permissions.</figcaption></figure>';
+ if(type==='workflow')return flow(['Scope','Plan','Change','Verify'],'Keep changes small enough to inspect. Recheck the plan when new evidence appears.');
+ if(type==='sdlc')return '<figure class="diagram sdlc"><div><span class="kicker">A FAMILIAR CYCLE</span>'+flow(['Define','Design','Build','Test','Release','Learn'])+'</div><div class="sdlc-rows"><p><b>Before AI assistance</b><span>People research, draft, implement and review.</span></p><p><b>With AI assistance</b><span>AI can help at each stage. People steer, validate and approve.</span></p></div><figcaption>A conceptual comparison, not a measured productivity claim. Feedback still returns to earlier stages.</figcaption></figure>';
+ if(type==='claude')return '<figure class="diagram transcript"><span class="file-label">PREPARED EXAMPLE / NO LIVE MODEL CALL</span><p><b>You</b> Inspect the voting path. Propose a plan before editing.</p><p><b>Expected workflow</b> Find the handler · define a ballot identity · reject repeats · test stale ballots.</p><p><b>You</b> Show the diff and explain which edge cases the checks cover.</p><figcaption>Suggested walkthrough using Claude. No generated response is being presented as an actual run.</figcaption></figure>';
+ if(type==='self')return '<figure class="diagram self-grid">'+[['S','Select','Choose a useful skill'],['E','Extract','Explain the idea yourself'],['L','Live','Apply and teach it'],['F','Forge','Vary, revisit, improve']].map(([letter,title,copy])=>`<div><span>${letter}</span><h3>${title}</h3><p>${copy}</p></div>`).join('')+'<figcaption>Adapted from Dan Martell’s SELF framework. Practice examples by Hall Live.</figcaption></figure>';
+ if(type==='select')return flow(['One project','One skill gap','One next exercise'],'A focused goal gives your study a place to land.');
+ if(type==='extract')return flow(['Read','Close the answer','Explain','Check the gaps'],'Use your own explanation as evidence of what you understand.');
+ if(type==='forge')return flow(['Count the values','Sum the values','Change the input','Try tomorrow'],'Keep the concept. Change the problem.');
+ if(type==='practice')return flow(['Try','Hint','Explain','Solo practice','Revisit'],'Return to the idea you could not yet use independently.');
+ if(type==='debate')return '<div class="debate-art" aria-hidden="true"><span>YES.</span><span>NO.</span><span class="accent">IT DEPENDS.</span></div>';
+ if(type==='closing')return '<div class="closing-art"><span>BETTER QUESTIONS.</span><span>STRONGER SKILLS.</span><span class="accent">YOUR NEXT MOVE.</span></div>';
+ return '';
 }
-function clock() {
-  const el = document.querySelector('.clock');
-  if (!el || !snapshot?.end) return;
-  const seconds = Math.max(0,Math.ceil((snapshot.end-Date.now()-offset)/1000));
-  el.textContent = Math.floor(seconds/60)+':'+String(seconds%60).padStart(2,'0');
-}
-async function act(work, message) {
-  if (busy) return;
-  busy = true;
-  notice.textContent = '';
-  try { await work(); notice.textContent = message || ''; }
-  catch (e) { notice.textContent = e.message; }
-  finally { busy = false; }
-}
-const slideDiagrams = {
-  O03: {steps:['Input context','Next-token distribution','Selected token','Updated context'], detail:'Repeat with the updated context.'},
-  A02: {steps:['Human goal','Model chooses next step','Authorized tool','Result or error'], detail:'The result returns to the model. The model can answer or stop, or seek human review when approval is required.'},
-  A04: {steps:['AI application / host','MCP server','Authorized resources'], connector:'⇄', detail:'The host connects via an MCP client. The server can connect to allowed files and allowed databases or services.'},
-  A07: {steps:['Audience phone','Local router','Laptop website'], connector:'⇄', detail:'The hall website works on the local network without WAN access.'},
-  S02: {steps:['Requirements','Design','Build','Test','Release','Maintain'], detail:'Test feedback returns to design. Maintenance feedback returns to requirements.'},
-  L05: {steps:['Try first','Ask for a hint','Explain it','Practice alone','Revisit later'], detail:'If you get stuck during solo practice, return to the hint step.'}
-};
-function slideDiagram(id) {
-  const diagram = slideDiagrams[id];
-  if (!diagram) return '';
-  return '<figure class="slide-diagram"><ol>'+diagram.steps.map((step,index)=>
-    '<li>'+(index ? '<span aria-hidden="true">'+(diagram.connector || '→')+'</span>' : '')+
-    '<strong>'+escapeHTML(step)+'</strong></li>').join('')+
-    '</ol><figcaption>'+escapeHTML(diagram.detail)+'</figcaption></figure>';
-}
-function slideCopy(body) {
-  return body.split(/(```[\s\S]*?```)/).filter(part => part.trim()).map(part => {
-    if (part.startsWith('```')) {
-      return '<pre><code>'+escapeHTML(part.replace(/^```[^\n]*\n|\n?```$/g,''))+'</code></pre>';
-    }
-    const lines = part.trim().split('\n');
-    if (lines.length >= 3 && lines.every(line => line.startsWith('|') && line.endsWith('|'))) {
-      const cells = line => line.slice(1,-1).split('|').map(cell=>escapeHTML(cell.trim()));
-      const headings = cells(lines[0]);
-      return '<table class="slide-table"><thead><tr>'+headings.map(heading=>
-        '<th scope="col">'+heading+'</th>').join('')+'</tr></thead><tbody>'+
-        lines.slice(2).map(line=>'<tr>'+cells(line).map((cell,index)=>index===0
-          ? '<th scope="row">'+cell+'</th>'
-          : '<td>'+cell+'</td>').join('')+'</tr>').join('')+
-        '</tbody></table>';
-    }
-    return '<p>'+escapeHTML(part.trim())+'</p>';
-  }).join('');
-}
-function ballotResult(options, counts, label = '') {
-  const total = counts.reduce((sum, count) => sum + count, 0);
-  return '<section class="ballot-result">'+(label ? '<h2>'+label+'</h2>' : '')+
-    '<p>'+(total ? total+' '+(total===1?'vote':'votes') : 'No votes received.')+'</p>'+
-    '<ol class="results">'+options.map((option,index)=>{
-      const count = counts[index];
-      const percent = total ? ' · '+Math.round(100*count/total)+'%' : '';
-      return '<li>'+escapeHTML(option)+' · '+count+percent+
-        '<meter min="0" max="'+Math.max(1,total)+'" value="'+count+
-        '" aria-label="'+escapeHTML(option)+'"></meter></li>';
-    }).join('')+'</ol></section>';
-}
-async function refreshPublic() {
-  const data = await request('/state');
-  if (busy) return;
-  offset = data.now - Date.now();
-  snapshot = data;
-  const key = JSON.stringify({...data,now:0});
-  if (signature === key) return;
-  signature = key;
-  const {live,phase,end,counts,prior,voted} = data;
-  const e = escapeHTML;
-  const audience = mode === 'audience';
-  const stageLabel = live ? 'Live on stage' : 'Waiting for the stage';
-  const pollLabels = {ready:'Get ready to vote',open:'Voting open',closed:'Voting closed',revealed:'Poll results'};
-  const status = live?.options.length ? pollLabels[phase] : stageLabel;
-  let interaction = '';
-  if (phase === 'revealed') {
-    interaction = prior
-      ? '<div class="ballot-comparison">'+ballotResult(prior.options,prior.counts,'First vote')+
-        ballotResult(live.options,counts,'Second vote')+'</div>'
-      : ballotResult(live.options,counts);
-  } else if (phase === 'open' && audience && !voted) {
-    interaction = '<div class="ballot" aria-label="Choose one answer">'+live.options.map((o,i)=>'<button data-choice="'+i+'"><span class="choice-letter" aria-hidden="true">'+String.fromCharCode(65+i)+'</span><span>'+e(o)+'</span></button>').join('')+'</div>';
-  } else if (phase === 'open') {
-    interaction = '<p class="poll-message" role="status">'+ (audience ? 'Your vote is in.' : 'Vote on your phone.')+'</p>';
-    if (!audience) interaction += '<ol class="projector-choices">'+live.options.map(o=>'<li>'+e(o)+'</li>').join('')+'</ol>';
-  } else if (phase === 'closed') {
-    interaction = '<p>Voting closed. Results are coming.</p>';
-  }
-  main.innerHTML = '<article class="stage" data-phase="'+phase+'"><div class="stage-content"><h1>'+
-    e(live?.title || 'You’re in the hall.')+'</h1>'+slideCopy(live?.body || (live ? '' : 'Keep this page open for the next activity.'))+
-    slideDiagram(live?.id)+
-    '</div>'+(interaction ? '<div class="stage-interaction">'+interaction+'</div>' : '')+
-    '<footer class="stage-top"><span class="stage-status">'+status+'</span>'+
-    (end ? '<div class="timer"><span>Debate time left</span><time class="clock" aria-label="Debate time remaining"></time></div>' : '')+'</footer></article>';
-  clock();
-  main.querySelectorAll('[data-choice]').forEach(button => button.onclick = async () => {
-    main.querySelectorAll('[data-choice]').forEach(b=>b.disabled=true);
-    await act(()=>request('/vote',{ballot:live.ballot,choice:Number(button.dataset.choice)}));
-    try { await refreshPublic(); }
-    catch { notice.textContent = 'Connection lost. Rejoin the hall Wi-Fi to check your vote.'; }
-    main.querySelectorAll('[data-choice]').forEach(b=>b.disabled=false);
-  });
-}
-function login() {
-  main.innerHTML = '<h1>Presenter studio</h1><form class="login"><label>Password<input type="password" name="password" required autocomplete="current-password"></label><button class="primary">Sign in</button></form>';
-  main.querySelector('form').onsubmit = event => {
-    event.preventDefault();
-    act(async()=>{await request('/login',Object.fromEntries(new FormData(event.target)));await studio();});
-  };
-}
-async function studio() {
-  let data;
-  try { data = await request('/studio'); }
-  catch(e) { if (e.status === 401) return login(); throw e; }
-  snapshot = data;
-  const {slides,names,user,host,live,phase,end,voteCount} = data;
-  const e = escapeHTML;
-  const current = slides.find(s=>s.id===selected) || slides[0];
-  selected = current.id;
-  const orderedSlides = names.flatMap((_,section)=>slides.filter(slide=>slide.section===section));
-  const liveIndex = orderedSlides.findIndex(slide=>slide.id===live?.id);
-  const previous = orderedSlides[liveIndex-1];
-  const next = orderedSlides[liveIndex+1];
-  const moveButton = (direction, label, target) => '<button data-direction="'+direction+'" data-move="'+e(target?.id || '')+'"'+
-    (target ? ' title="'+e(target.title)+'"' : ' disabled')+'>'+label+'</button>';
-  const deck = names.map((name,section)=>'<section><h3>'+e(name)+'</h3>'+
-    slides.filter(s=>s.section===section).map(s=>'<button data-select="'+s.id+'" aria-current="'+(s.id===selected)+'">'+e(s.title)+
-      (s.id===live?.id ? '<span class="deck-live">Live</span>' : '')+'</button>').join('')+
-    '<button data-add="'+section+'">Add slide</button>'+'</section>').join('');
-  const stageControl = (label,path,value='') => '<button '+(path==='/phase' || (path==='/cue' && !phaseAction) ? 'class="primary" ' : '')+'data-stage="'+path+'" data-value="'+value+'">'+label+'</button>';
-  const phaseAction = live?.options.length ? {ready:['Open voting','open'],open:['Close voting','closed'],closed:['Reveal results','revealed']}[phase] : null;
-  const controls = stageControl('Cue saved slide','/cue')+
-    (live?.options.length && phaseAction ? stageControl(phaseAction[0],'/phase',phaseAction[1]) : '')+
-    (live?.section===4 ? stageControl(end?'Clear debate clock':'Start 30-minute clock','/clock',end?'clear':'start') : '');
-  const deckScroll = main.querySelector('.deck')?.scrollTop ?? 0;
-  main.innerHTML = '<div class="studio-header"><h1>Presenter studio</h1><p><a href="/join">Audience QR</a> · Signed in as <strong>'+user+'</strong></p></div><section class="stage-panel" aria-label="Live stage"><div class="live-summary"><div><p class="stage-status">'+host+' has the stage</p><h2>'+e(live?.title || 'Waiting for a cue')+'</h2></div>'+
-    (live?.options.length?'<p class="poll-count">'+voteCount+' '+(voteCount===1?'vote':'votes')+' · '+({ready:'Ready',open:'Open',closed:'Closed',revealed:'Revealed'}[phase] || 'Waiting')+'</p>':'')+'</div>'+
-    (end?'<div class="timer"><span>Debate time left</span><time class="clock" aria-label="Debate time remaining"></time></div>':'')+
-    '<div class="actions" role="group" aria-label="Slide navigation">'+
-    moveButton('previous','Previous slide',previous)+moveButton('next','Next slide',next)+
-    (liveIndex>=0?'<span class="slide-position">'+(liveIndex+1)+' / '+orderedSlides.length+'</span>':'')+'</div>'+
-    '<div class="actions">'+controls+'<button id="refresh">Refresh studio</button><button id="logout">Sign out</button></div></section>'+
-    '<div class="studio"><aside class="deck" aria-label="Presentation deck"><h2 class="deck-heading">Presentation deck</h2>'+deck+'</aside><div class="editor">'+
-    '<section class="slide-preview" aria-label="Selected slide preview"><h2>'+e(current.title)+'</h2>'+slideCopy(current.body)+slideDiagram(current.id)+'</section>'+
-    '<form><fieldset><legend>Edit slide</legend><label>Title<input name="title" required maxlength="100" value="'+e(current.title)+'"></label>'+
-    '<label>Slide text<textarea name="body" maxlength="700">'+e(current.body)+'</textarea></label>'+
-    '<label>Poll choices <small>Optional. Enter two to six choices, one per line.</small><textarea name="options">'+e(current.options.join('\n'))+'</textarea></label>'+
-    '<button class="primary">Save slide</button></fieldset></form>'+
-    (current.notes?'<details class="speaker-notes"><summary>Speaker notes · '+e(current.timing)+'</summary><pre>'+e(current.notes)+'</pre></details>':'')+'</div></div>';
-  main.querySelector('.deck').scrollTop = deckScroll;
-  main.querySelector('form').onsubmit = event => {
-    event.preventDefault();
-    const form = Object.fromEntries(new FormData(event.target));
-    act(async()=>{
-      await request('/save',{...form,id:selected,revision:current.revision,options:form.options.split(/\r?\n/).map(s=>s.trim()).filter(Boolean)});
-      await studio();
-    },'Slide saved.');
-  };
-  let dirty = false;
-  main.querySelector('form').oninput = () => { dirty = true; };
-  const proceed = () => !dirty || (notice.textContent = 'Save your slide before switching views or using stage controls.', false);
-  main.querySelectorAll('[data-select]').forEach(b=>b.onclick=()=>{if (proceed()) act(async()=>{selected=b.dataset.select;await studio();});});
-  main.querySelectorAll('[data-add]').forEach(b=>b.onclick=()=>{if(proceed()) act(async()=>{
-    const section=Number(b.dataset.add);
-    await request('/add',{section});
-    const updated=await request('/studio');
-    selected=updated.slides.filter(s=>s.section===section).at(-1).id;
-    await studio();
-  },'Slide added.');});
-  main.querySelectorAll('[data-stage]').forEach(b=>b.onclick=()=>{if(proceed()) act(async()=>{
-    await request(b.dataset.stage,{id:selected,ballot:live?.ballot ?? null,phase:b.dataset.value,start:b.dataset.value==='start'});
-    await studio();
-  });});
-  main.querySelectorAll('[data-move]:enabled').forEach(button=>button.onclick=()=>{if(proceed()) act(async()=>{
-    await request('/cue',{id:button.dataset.move,ballot:live?.ballot ?? null});
-    selected = button.dataset.move;
-    await studio();
-    const sameDirection = main.querySelector('[data-direction="'+button.dataset.direction+'"]:enabled');
-    (sameDirection || main.querySelector('[data-move]:enabled'))?.focus();
-  });});
-  main.querySelector('#refresh').onclick=()=>{if(!dirty || confirm('Discard unsaved edits and reload the shared deck?')) act(studio);};
-  main.querySelector('#logout').onclick=()=>{if(proceed()) act(async()=>{await request('/logout',{});login();});};
-  clock();
-}
-if (view === 'studio') act(studio);
-else {
-  const poll = async () => {
-    try {
-      await refreshPublic();
-      if (notice.dataset.offline) {
-        delete notice.dataset.offline;
-        notice.textContent = '';
-      }
-    } catch {
-      notice.dataset.offline = 'true';
-      notice.textContent = 'Connection lost. Stay on the hall Wi-Fi. Reconnecting…';
-    } finally {setTimeout(poll,1600+Math.random()*500);}
-  };
-  poll();
-}
-setInterval(clock,250);
+function copy(body){return body.split(/(```[\s\S]*?```)/).filter(x=>x.trim()).map(part=>{if(part.startsWith('```'))return '<pre><code>'+escape(part.replace(/^```[^\n]*\n|\n?```$/g,''))+'</code></pre>';const lines=part.trim().split('\n');if(lines.length>=3&&lines.every(l=>l.startsWith('|')&&l.endsWith('|'))){const row=(line,tag)=>'<tr>'+line.slice(1,-1).split('|').map(cell=>`<${tag}>${escape(cell.trim())}</${tag}>`).join('')+'</tr>';return '<div class="table-wrap"><table><thead>'+row(lines[0],'th')+'</thead><tbody>'+lines.slice(2).map(l=>row(l,'td')).join('')+'</tbody></table></div>';}return '<p>'+escape(part.trim())+'</p>';}).join('');}
+function results(options,counts,label){const total=counts.reduce((a,b)=>a+b,0);return `<section class="result"><h3>${label}</h3><p>${total} ${total===1?'vote':'votes'}</p>${options.map((o,i)=>`<div class="result-line"><span>${escape(o)}</span><b>${total?Math.round(counts[i]/total*100):0}% · ${counts[i]}</b><meter min="0" max="${Math.max(total,1)}" value="${counts[i]}" aria-label="${escape(o)}"></meter></div>`).join('')}</section>`;}
+function interaction(slide){if(!slide.options.length)return '';const live=(following||host)&&state?.live?.id===slide.id;if(live&&state.phase==='revealed')return '<div class="comparison">'+(state.prior?results(state.prior.options,state.prior.counts,'First vote'):'')+results(slide.options,state.counts||slide.options.map(()=>0),state.prior?'Second vote':'Room results')+'</div>';
+ const voted=live?state.voted:localPicks[slide.id]!==undefined;
+ const open=live?state.phase==='open':true;
+ return `<section class="poll"><div class="poll-heading"><span class="kicker">${live?'ROOM BALLOT':'YOUR PERSPECTIVE'}</span><span>${live?({ready:'Get ready',open:'Voting open',closed:'Voting closed'}[state.phase]||'Waiting'):'Individual reflection · no shared tally'}</span></div><div class="choices">${slide.options.map((option,i)=>`<button data-choice="${i}" ${!open||voted||host?'disabled':''} class="${!live&&localPicks[slide.id]===i?'picked':''}"><span>${String.fromCharCode(65+i)}</span>${escape(option)}</button>`).join('')}</div><p class="poll-receipt">${host&&live?'Audience votes on their own devices.':voted?(live?'Your vote is counted.':'Your choice is saved for this browser session.'):(live&&!open?'Wait for the room to open voting.':'Choose one answer.')}</p></section>`;}
+function render(){const fallback=deck[index];if(!fallback)return;const slide=following?(state?.live?{...deck.find(s=>s.id===state.live.id),...state.live}: {id:'waiting',section:0,title:'You’re in. Stay curious.',body:'Keep this page open. The next activity will appear when the session starts.',options:[]}):fallback;
+ document.body.dataset.section=slide.section;document.body.classList.toggle('following',following);
+ $('#chapters').innerHTML=sections.map((name,s)=>`<button data-section="${s}" ${following?'disabled':''} ${s===slide.section?'aria-current="step"':''}><span>${String(s+1).padStart(2,'0')}</span>${name}</button>`).join('');
+ main.innerHTML=`<article class="slide visual-${slide.visual||'text'} ${slide.visual?'has-visual':''} ${slide.options.length?'has-poll':''}"><div class="slide-copy"><p class="kicker">${escape(subtitles[slide.section])}</p><h1>${escape(slide.title)}</h1><div class="body-copy">${copy(slide.body)}</div>${slide.id==='L-self'?'<a class="source-link" href="https://www.youtube.com/watch?v=6poBPhfB-WY" target="_blank" rel="noopener">Framework source: Dan Martell</a>':''}</div>${slide.visual?'<div class="visual">'+visual(slide.visual)+'</div>':''}${interaction(slide)}${state?.end&&(following||host)?'<div class="debate-clock"><span>Debate time left</span><time id="timer"></time></div>':''}</article>`;
+ const current=following?deck.findIndex(s=>s.id===slide.id):index;
+ $('#position').textContent=current<0?'Waiting':String(current+1).padStart(2,'0')+' / '+deck.length;
+ $('#chapter-label').textContent=sections[slide.section];$('#progress').style.width=((current+1)/deck.length*100)+'%';
+ $('#previous').disabled=following||index===0;$('#next').disabled=following||index===deck.length-1;
+ $('#follow').textContent=following?'Explore on my own':'Follow the room';
+ document.title=slide.title+' · Hall Live';
+ main.querySelectorAll('[data-choice]').forEach(b=>b.onclick=async()=>{if(busy)return;busy=true;try{if(following){main.querySelectorAll('[data-choice]').forEach(x=>x.disabled=true);await request('vote',{ballot:state.live.ballot,choice:Number(b.dataset.choice)});state=await request('state');}else{localPicks[slide.id]=Number(b.dataset.choice);try{sessionStorage.setItem('hall-picks',JSON.stringify(localPicks));}catch{} }render();}catch(e){note(e.message);render();}finally{busy=false;}});
+ $('#chapters').querySelectorAll('button').forEach(b=>b.onclick=()=>go(deck.findIndex(s=>s.section===Number(b.dataset.section))));
+ controls();tick();}
+async function go(target){if(target<0||target>=deck.length||following||busy)return;busy=true;try{if(host){state=await request('state');await request('cue',{id:deck[target].id,ballot:state.live?.ballot??null});state=await request('state');}index=target;history.replaceState(null,'','#'+deck[index].id);render();}catch(e){note(e.message);}finally{busy=false;}}
+function controls(){$('#login').hidden=host;$('#host-controls').hidden=!host;if(!host)return;$('#live-label').textContent='On stage: '+(state?.live?.title||'Waiting for a cue');const phase={ready:['Open voting','open'],open:['Close voting','closed'],closed:['Reveal results','revealed']}[state?.phase];$('#phase').hidden=!state?.live?.options.length||!phase;$('#phase').textContent=phase?.[0]||'Results revealed';$('#phase').dataset.phase=phase?.[1]||'';$('#clock').hidden=state?.live?.section!==4;$('#clock').textContent=state?.end?'Clear debate clock':'Start 30-minute debate clock';}
+async function action(path,args){if(busy)return;busy=true;try{state=await request('state');await request(path,{ballot:state.live?.ballot??null,...args});state=await request('state');render();}catch(e){note(e.message);}finally{busy=false;}}
+function tick(){const timer=$('#timer');if(!timer||!state?.end)return;const seconds=Math.max(0,Math.ceil((state.end-Date.now()-offset)/1000));timer.textContent=Math.floor(seconds/60)+':'+String(seconds%60).padStart(2,'0');}
+$('#next').onclick=()=>go(index+1);$('#previous').onclick=()=>go(index-1);
+$('#follow').onclick=async()=>{if(!local){note('This is the standalone presentation. For synchronized voting, open the local hall address.');return;}if(host){note('Lock room controls before following as an audience member.');return;}following=!following;lastPublic='';const url=new URL(location);if(following)url.searchParams.set('follow','1');else url.searchParams.delete('follow');history.replaceState(null,'',url);if(following)await poll();render();};
+$('#room').onclick=()=>{if(!local){note('Room controls run on the local Hall Live server. This copy supports independent navigation and reflection.');return;}$('#room-dialog').showModal();};
+$('#close-room').onclick=()=>$('#room-dialog').close();
+$('#login').onsubmit=async event=>{event.preventDefault();if(busy)return;busy=true;try{await request('login',{password:new FormData(event.target).get('password')});await request('studio');host=true;following=false;state=await request('state');event.target.reset();controls();render();}catch(e){note(e.message);}finally{busy=false;}};
+$('#cue').onclick=()=>action('cue',{id:deck[index].id});$('#phase').onclick=()=>action('phase',{phase:$('#phase').dataset.phase});$('#clock').onclick=()=>action('clock',{start:!state?.end});
+$('#logout').onclick=async()=>{try{await request('logout',{});host=false;controls();}catch(e){note(e.message);}};
+$('#fullscreen').onclick=async()=>{try{if(document.fullscreenElement)await document.exitFullscreen();else await document.documentElement.requestFullscreen();}catch{note('Fullscreen is unavailable in this browser.');}};
+addEventListener('keydown',event=>{if($('#room-dialog').open||['INPUT','TEXTAREA','SELECT','BUTTON'].includes(event.target.tagName)||event.ctrlKey||event.altKey||event.metaKey)return;if(['ArrowRight','PageDown','ArrowLeft','PageUp','Home','End'].includes(event.key)){event.preventDefault();if(event.key==='Home')go(0);else if(event.key==='End')go(deck.length-1);else go(index+(['ArrowRight','PageDown'].includes(event.key)?1:-1));}});
+addEventListener('hashchange',()=>{if(!following){const n=deck.findIndex(s=>'#'+s.id===location.hash);if(n>=0){index=n;render();}}});
+async function poll(){if(!local||(!following&&!host)||busy)return;try{const next=await request('state');offset=next.now-Date.now();const key=JSON.stringify({...next,now:0});state=next;if(key!==lastPublic){lastPublic=key;if(following)render();else controls();}if($('#notice').dataset.offline){note('');delete $('#notice').dataset.offline;}}catch{if(following){$('#notice').dataset.offline='1';note('Connection lost. Stay on the hall Wi-Fi; reconnecting…');}}}
+try{deck=window.HALL_DECK||await request('deck.json');if(!deck.length)throw Error('The presentation is empty.');const found=deck.findIndex(s=>'#'+s.id===location.hash);index=Math.max(found,0);if(!local)following=false;if(following)await poll();render();setInterval(poll,1800);setInterval(tick,250);}catch(e){main.innerHTML='<h1>The presentation could not load.</h1><p>'+escape(e.message)+'</p>';note('Reload the page or check the local host.');}

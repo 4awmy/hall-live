@@ -1,18 +1,7 @@
 <!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Hall Live</title>
-<link rel="stylesheet" href="/style.css">
-</head>
-<body>
-<header>
-  <a class="brand" href="/"><span class="brand-mark" aria-hidden="true"></span>Hall Live</a>
-  <nav aria-label="Views"><a href="/">Audience</a><a href="/?view=projector">Projector</a><a href="/?view=studio">Studio</a></nav>
-</header>
-<p id="notice" role="status"></p>
-<main id="main"><p>Connecting to the hall…</p></main>
-<script type="module" src="/app.js"></script>
-</body>
-</html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#111215"><title>AI, Unfiltered · Hall Live</title><link rel="stylesheet" href="./style.css"></head>
+<body><a class="skip" href="#content">Skip to slide</a><header class="topbar"><a class="brand" href="./">HALL<span>LIVE</span><i aria-hidden="true"></i></a><span class="event-name">AI, UNFILTERED <span> / A conversation, together.</span></span><div class="top-actions"><button id="follow">Follow the room</button><button id="room">Room controls</button><button id="fullscreen" aria-label="Toggle fullscreen">Fullscreen</button></div></header>
+<div class="shell"><aside aria-label="Chapters"><p class="rail-label">THE CONVERSATION</p><nav id="chapters"></nav><div class="rail-bottom"><span>OMAR × EZZAT</span><p>Think out loud.<br>Leave with a better question.</p></div></aside><main id="content" tabindex="-1"><p>Loading the conversation…</p></main></div>
+<footer class="navigation"><div class="progress"><span id="progress"></span></div><span id="chapter-label"></span><div><button id="previous" aria-label="Previous slide">Previous</button><span id="position" aria-live="polite"></span><button id="next" aria-label="Next slide">Next</button></div><span class="keyboard-hint">Use ← → to explore</span></footer>
+<p id="notice" role="status"></p><dialog id="room-dialog"><form id="login"><p class="kicker">IN THE SAME ROOM</p><h2>Control the session.</h2><p>Local host only. Keep audience devices in “Follow the room”.</p><label>Session password<input name="password" type="password" required autocomplete="current-password"></label><button class="primary">Unlock controls</button></form><div id="host-controls" hidden><h2>Session controls</h2><p id="live-label"></p><div class="control-grid"><button id="cue">Show this slide to the room</button><button id="phase">Open voting</button><button id="clock">Start 30-minute debate clock</button><button id="logout">Lock controls</button></div></div><button id="close-room" type="button">Back to the presentation</button></dialog>
+<script src="./logos.js"></script><script type="module" src="./app.js"></script></body></html>

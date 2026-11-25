@@ -1,38 +1,33 @@
-# Hall Live
+# Hall Live — AI, Unfiltered
 
-Hall Live is a review prototype for Omar and Ezzat. See [DESIGN.md](DESIGN.md) for the event flow, permissions and fallback plan.
+A presentation website for Omar and Ezzat. Navigate the talk directly with chapter buttons, Previous / Next, arrow keys, Home / End and fullscreen. There is no separate presenter studio screen. Content and poll options are authored in code.
 
-## Try it on one computer
+## Review without a server
 
-Open PowerShell in this folder with Node.js available. Set the presenter password before launch.
+Run `node scripts/build-pages.mjs` to produce `_site/`. Serve that directory with a static web server. It includes all 48 slides, diagrams, code examples, questions and individual reflection choices. Personal choices are session-only and are explicitly labeled as having no shared tally. The standalone HTML supplied with this review also opens directly as a file.
+
+## Run a shared local session
+
+Requires Node.js 24, with no package installation or internet access.
 
 ```powershell
-$env:HALL_OMAR = 'replace-with-omar-password'
+$env:HALL_OMAR = 'choose-a-long-session-password'
 node server.mjs
 ```
 
-- Audience: http://127.0.0.1:8080/
-- Presenter studio: http://127.0.0.1:8080/?view=studio
-- Projector: http://127.0.0.1:8080/?view=projector
+1. Open http://127.0.0.1:8080/ on the host display. Choose **Room controls**, enter the password, and unlock the session.
+2. Host navigation now cues that slide to the room. The control panel can also cue the current slide, open/close voting, reveal results and start/clear the 30-minute debate clock. Lock controls when finished. Presenter authorization remains on the server.
+3. Audience devices use `http://HOST-LAN-IP:8080/?follow=1`. The page follows the current cue and reconnects after brief interruptions. Audience devices can explore independently, then follow again.
+4. Open `/join` to make a printable QR pointing at the audience follow view. Set `HALL_BIND` to `0.0.0.0` for the LAN and complete the venue checks in ROUTER-QUICKSTART.md.
 
-Sign in to the studio and cue **You Are the LLM**, then cue each numbered prediction round to open voting, close it, and reveal results. In Debate, cue the introduction and start the 30-minute clock. Each motion has a first and second ballot. Reveal both to see the comparison after the second vote. The clock continues across debate slides.
+This rewrite starts with `hall-presentation-data.json`; older `hall-data.json` drafts are left untouched. Use `HALL_DATA` to select a separate rehearsal data file. Back up data while the host is stopped. Restarting resets presenter sessions. Changes to the source deck require a fresh data path to seed a new session.
 
-The studio loads its initial deck from [AI_Event_Presentation_Master.md](AI_Event_Presentation_Master.md). Expand **Speaker notes** in the studio to see the private notes and visual directions. To start with the master when you already have saved drafts, set `HALL_DATA` to a new file path before launching. Existing data files retain their saved deck.
+## Edit the presentation
 
-Drafts and live state are stored in hall-data.json in the launch folder. Keep a copy while the server is stopped. Set HALL_DATA to another file path to rehearse with separate data. Stop the server with Ctrl+C. Presenter sessions reset on restart.
+`deck.mjs` reads the original Markdown master. `presentation.mjs` enriches that deck with the new flow, SELF framework, diagrams and question options. `app.js` renders slides and diagrams and connects to the original server-controlled ballot lifecycle. Add poll choices in `presentation.mjs`; no studio editing workflow is required. The server retains its authenticated draft endpoints for compatibility.
 
-## Try it on hall Wi-Fi after review
+The prepared Claude walkthrough is explicitly illustrative; no live model response is implied. SELF is attributed to Dan Martell. Diagram captions explain simplifications. Existing research slides retain the citations in the master source register. Vote charts use actual local-server data only. Before/after debate charts compare ballot distributions, not individual changes of mind.
 
-Set HALL_BIND to 0.0.0.0 before startup. On another device connected to the same router, open http://HOST-LAN-IP:8080 with the actual address. Confirm that the host firewall and router allow access. Disconnect the internet uplink and repeat the rehearsal. The prototype has no package installs, hosted assets or calls to an AI provider. It requires a working connection to the local host. Review access isolation and encrypted presenter transport before using the shared hall network for a real event.
+## GitHub Pages — deferred until review
 
-## Audience QR and venue setup
-
-Open `/join` on the running server to generate a printable QR from the verified hall Wi-Fi address. Follow the [router quickstart](ROUTER-QUICKSTART.md) for the phone rehearsal and printing steps.
-
-## GitHub Pages presentation
-
-GitHub Pages publishes a static deck preview; it cannot run `server.mjs`. Voting, presenter authentication, editing, shared stage state and the debate clock remain in the local application described above. Public builds exclude speaker notes and runtime data.
-
-Build with `node scripts/build-pages.mjs`. Output is `_site/`. The preview supports chapter/slide selection, previous/next buttons, arrow keys and shareable slide links. It uses relative asset paths for the `/hall-live/` project URL.
-
-A repository administrator must choose **Settings → Pages → Build and deployment → Source → GitHub Actions** once. The **Deploy GitHub Pages** workflow then publishes pushes to `main`, or can be run manually from Actions. Expected address after successful deployment: https://4awmy.github.io/hall-live/.
+The existing Pages workflow builds this same presentation from `main`. Its output excludes notes, credentials and runtime data. GitHub Pages supports independent navigation and personal reflection; it does not run the Node server or shared polls. A repository administrator must enable **Settings → Pages → Source → GitHub Actions** before publishing. Deployment of this rebuild is deferred pending review.

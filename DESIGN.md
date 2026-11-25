@@ -1,17 +1,9 @@
-﻿# Hall Live
+# Presentation design
 
-## Projector
+The website is the slide deck. A compact chapter rail, large heading, concise copy and a diagram or audience question form the main screen. The dark graphite and lime palette is self-contained, with system fonts and locally served assets. Mobile screens stack the copy and visuals; fullscreen emphasizes the presentation. Reduced-motion and keyboard focus preferences are respected.
 
-The projector shows the cue without site navigation. Titles and slide copy lead, with large type on a deep evergreen background. The status and debate clock sit along the bottom. Open ballots put the prompt and choices above the status. After reveal, compare first and second ballots side by side when both are available.
+There is no separate studio page. The local host unlocks a small dialog over the presentation to cue the room and moderate ballots. The audience follows through `?follow=1`; independent exploration remains available. Existing server authorization, one-vote-per-browser checks, stale-ballot protection, separate reveal, before/after results and the debate timer remain in use. Browser cookies are not verified human identity.
 
-## Audience
+The code-authored deck incorporates the handwritten brief: prediction activity; AI/ML/DL overview; agent loop; context, MCP and skills; practical workflow; SDLC comparison and a prepared Claude example; SELF learning; debate and a joint closing. Existing prediction rounds, study slides and debate ballot pairs remain.
 
-Phones show the current title, its copy, and the next available action in that order. The light page, full-width choices, and letter labels keep votes easy to scan and tap. Status and timer follow the content. The page reconnects automatically and resynchronizes to the current cue.
-
-## Presenter studio
-
-Omar edits and cues the entire deck. The live desk groups slide navigation, ballot controls, and the debate clock. The running order marks the live cue and highlights the selected draft. Selecting a slide shows its preview, editor, and private speaker notes. The public views change only when a saved slide is cued. Saves check revisions to catch conflicting edits.
-
-## Join card and venue
-
-Use the [router quickstart](ROUTER-QUICKSTART.md) to test with a phone before printing the join card. Keep a fallback slide copy, running order, stopwatch, and paper tally. Hall Live serves all runtime assets locally. The router supplies Wi-Fi and the host supplies the HTTP server. Browsers poll for updates and reconnect automatically. The server stores event state in a JSON file. Keep a backup while the host is stopped.
+Standalone copies have individual, session-only choices with no invented totals. Shared room state requires the local server. The original Markdown master remains the source register and historical planning document; presentation.mjs defines this revised public experience.

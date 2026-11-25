@@ -30,7 +30,7 @@ form.addEventListener('submit', event => {
     if (url.protocol !== 'http:' || !isPrivateIPv4(url.hostname) || url.username || url.password) {
       throw Error('Enter the host’s local address, starting with http:// and using its private IPv4 address.');
     }
-    const address = url.origin + '/';
+    const address = url.origin + '/?follow=1';
     const qr = qrcode(0, 'M');
     qr.addData(address);
     qr.make();
