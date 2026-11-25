@@ -32,7 +32,7 @@ if (Object.values(passwords).some(p => !p || p.length < 10) || passwords.Omar ==
   throw Error('Set HALL_OMAR and HALL_EZZAT to distinct passwords of at least 10 characters.');
 }
 const sessions = new Map();
-const assets = Object.fromEntries(Object.entries({'/':'index.html','/app.js':'app.js','/style.css':'style.css'}).map(([url,path]) => [url,readFileSync(new URL(path,import.meta.url))]));
+const assets = Object.fromEntries(Object.entries({'/':'index.html','/app.js':'app.js','/style.css':'style.css','/join':'join.html','/join.js':'join.js','/qrcode.js':'qrcode.js'}).map(([url,path]) => [url,readFileSync(new URL(path,import.meta.url))]));
 const send = (res, code, value) => {
   res.writeHead(code, {'Content-Type':'application/json','Cache-Control':'no-store'});
   res.end(JSON.stringify(value));
@@ -159,4 +159,3 @@ createServer(async (req,res) => {
   const {address,port} = this.address();
   console.log('Hall Live listening on '+address+':'+port);
 });
-

@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Audience join card | Hall Live</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<header><a class="brand" href="/"><span class="brand-mark" aria-hidden="true"></span>Hall Live</a><nav aria-label="Views"><a href="/">Audience</a><a href="/?view=studio">Studio</a></nav></header>
+<main class="join-layout">
+  <section class="editor join-settings">
+    <h2>Join card settings</h2>
+    <form id="join-form">
+      <label>Hall Wi-Fi name<input name="network" maxlength="32" required placeholder="Your event network"></label>
+      <label>Audience address<input name="address" type="url" required maxlength="80" placeholder="http://192.168.1.42:8080/"></label>
+      <div class="actions"><button class="primary">Make QR</button><button id="print-card" type="button" disabled>Print card</button></div>
+    </form>
+    <p id="join-status" role="status"></p>
+  </section>
+  <article class="join-card" aria-labelledby="join-title">
+    <h1 id="join-title">Join Hall Live</h1>
+    <ol>
+      <li>Connect to <strong id="printed-network">the hall Wi-Fi</strong>. Stay connected if your phone says there’s no internet.</li>
+      <li>Scan the QR with your camera, or type the address below.</li>
+    </ol>
+    <div id="join-qr"></div>
+    <p id="printed-address"></p>
+  </article>
+</main>
+<script src="/qrcode.js"></script>
+<script src="/join.js"></script>
+</body>
+</html>

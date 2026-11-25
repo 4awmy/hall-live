@@ -23,3 +23,7 @@ Drafts and live state are stored in hall-data.json in the launch folder. Keep a 
 ## Try it on hall Wi-Fi after review
 
 Set HALL_BIND to 0.0.0.0 before startup. On another device connected to the same router, open http://HOST-LAN-IP:8080 with the actual address. Confirm that the host firewall and router allow access. Disconnect the internet uplink and repeat the rehearsal. The prototype has no package installs, hosted assets or calls to an AI provider. It requires a working connection to the local host. Review access isolation and encrypted presenter transport before using the shared hall network for a real event.
+
+## Audience QR and venue setup
+
+Open `/join` on the running server to generate a printable QR from the verified hall Wi-Fi address. Follow the [router quickstart](ROUTER-QUICKSTART.md) for the phone rehearsal and printing steps.
