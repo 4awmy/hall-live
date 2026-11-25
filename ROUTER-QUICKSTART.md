@@ -9,10 +9,7 @@ Have Node.js installed, the router powered and its Wi-Fi name and password handy
 3. **2:00–3:00 · Start Hall Live.** Open PowerShell in this folder. Choose a presenter password with at least ten characters and run:
 
    ```powershell
-   $env:HALL_OMAR = 'replace-with-omar-password'
-   $env:HALL_BIND = '0.0.0.0'
-   $env:HALL_PORT = '8080'
-   node server.mjs
+   powershell -NoProfile -ExecutionPolicy Bypass -File .\start-event.ps1
    ```
 
    Keep this terminal open. On the host, open `http://127.0.0.1:8080/?view=projector` for the projector or `http://127.0.0.1:8080/?view=studio` for presenter controls. Keep presenter sign-ins on the host or a trusted presenter network. Attendees use the host IPv4 address, for example `http://192.168.1.42:8080/`.
